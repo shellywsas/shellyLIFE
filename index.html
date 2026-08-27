@@ -347,6 +347,7 @@
         .ts-school { border-right: 4px solid var(--btn-blue-hover); }
         .ts-volleyball { border-right: 4px solid var(--btn-pink-hover); }
         .ts-general { border-right: 4px solid #81c784; } /* פס ירוק עדין לאירועים שונים */
+        .ts-work { border-right: 4px solid #ffb74d; } /* כתום לרישום עבודה */
         
         .countdown-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 12px; margin-bottom: 10px; font-weight: 600; }
         .countdown-days { background: var(--btn-purple); padding: 5px 12px; border-radius: 20px; font-size: 14px; }
@@ -369,6 +370,12 @@
         .badge-exam { background: #ffebee; color: #c62828; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
         .type-selector { display: flex; gap: 10px; margin-bottom: 8px; }
         .type-selector label { font-size: 13px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+        .settings-menu-btn { background: #f5f5f5; padding: 15px; margin-bottom: 10px; text-align: right; border-radius: 12px; font-size: 16px; font-weight: 600; color: var(--text-dark); display: flex; align-items: center; gap: 10px; width: 100%; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 2px 5px rgba(0,0,0,0.02); cursor: pointer; transition: 0.2s;}
+        .settings-menu-btn:hover { background: var(--bg-purple); border-color: var(--btn-purple-hover); }
+        .screen-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;}
+        .screen-header h3 { margin: 0; font-size: 18px; color: var(--text-dark);}
+        .btn-show-more { background: none; color: #8e24aa; box-shadow: none; width: 100%; margin-top: 5px; font-size: 14px; font-weight: 600; text-decoration: underline; padding: 8px; cursor: pointer;}
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -401,7 +408,7 @@
             
             <div class="section-card">
                 <div class="section-title">📅 הלו"ז ליום הנבחר</div>
-                <div class="today-schedule-box scrollable-schedule" id="todayScheduleContainer">
+                <div class="today-schedule-box" id="todayScheduleContainer">
                     <!-- יאוכלס ע"י JS -->
                 </div>
             </div>
@@ -411,7 +418,7 @@
                 <ul class="task-list scrollable-schedule" id="dashboardHWList"></ul>
             </div>
 
-            <div class="section-card">
+            <div class="section-card" id="poland-dashboard-card">
                 <div class="section-title">🇮🇱 אירוע פולין הקרוב ליום זה</div>
                 <div id="nextPolandEvent" style="font-size: 15px; line-height: 1.4;"></div>
             </div>
@@ -426,6 +433,14 @@
         <!-- ==================== עמוד למידה ופוקוס ==================== -->
         <div id="page-study" class="page-section">
             
+            <!-- מערכת שעות ללימודים (חדש) -->
+            <div class="section-card">
+                <div class="section-title">📚 מערכת שעות להיום</div>
+                <div class="today-schedule-box" id="studySchoolScheduleContainer">
+                    <!-- יאוכלס ע"י JS -->
+                </div>
+            </div>
+
             <!-- טיימר למידה מתקדם -->
             <div class="section-card">
                 <div class="section-title">⏱️ טיימר ריכוז (פומודורו)</div>
@@ -497,14 +512,17 @@
                 <div class="section-title">🎯 המטרות הגדולות שלי</div>
                 <div id="customGoalsContainer"></div>
                 
-                <div class="input-row" style="margin-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
+                <!-- סידור מחדש של הוספת המטרה שיתאים למסך הטלפון -->
+                <div style="margin-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px; display: flex; flex-direction: column; gap: 10px;">
                     <input type="text" id="newGoalTitle" placeholder="מטרה חדשה (למשל: יומולדת)">
-                    <input type="date" id="newGoalDate">
-                    <button class="btn-add" onclick="addCustomGoal()">+</button>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="date" id="newGoalDate" style="flex: 1;">
+                        <button class="btn-add" style="padding: 12px 25px;" onclick="addCustomGoal()">+</button>
+                    </div>
                 </div>
             </div>
 
-            <div class="section-card">
+            <div class="section-card" id="poland-goals-card">
                 <div class="section-title">📅 הלו"ז המלא לפולין</div>
                 <div class="poland-timeline scrollable-schedule" id="polandTimeline" style="max-height: 250px;">
                     <!-- יאוכלס ע"י JS -->
@@ -529,78 +547,130 @@
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content">
             <button class="close-modal" onclick="closeSettings()">×</button>
-            <h2 style="margin-bottom: 15px;">הגדרות לו"ז</h2>
             
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchSettingsTab('school')">📚 מערכת</button>
-                <button class="tab-btn" onclick="switchSettingsTab('periods')">🔄 תקופות</button>
-                <button class="tab-btn" onclick="switchSettingsTab('volleyball')">🏐 כדורעף</button>
-                <button class="tab-btn" onclick="switchSettingsTab('general')">📅 אירועים</button>
+            <div id="settings-main-menu" style="display: flex; flex-direction: column; gap: 8px;">
+                <h2 style="margin-bottom: 20px;">הגדרות וניהול יומן</h2>
+                <button class="settings-menu-btn" style="background: var(--bg-blue); border: 2px solid var(--btn-blue-hover);" onclick="openSettingsScreen('all-events'); renderAllEvents();">📋 מבט על: כל האירועים והמשמרות</button>
+                <button class="settings-menu-btn" onclick="openSettingsScreen('school')">📚 מערכת שעות ללימודים</button>
+                <button class="settings-menu-btn" onclick="openSettingsScreen('periods')">🔄 חלוקת תקופות (בוקר/צהריים)</button>
+                <button class="settings-menu-btn" onclick="openSettingsScreen('volleyball')">🏐 אימוני כדורעף</button>
+                <button class="settings-menu-btn" onclick="openSettingsScreen('work')">📝 משמרות רישום (עבודה)</button>
+                <button class="settings-menu-btn" onclick="openSettingsScreen('general')">📅 אירועים ופגישות</button>
             </div>
 
-            <div id="tab-school" class="tab-content active">
-                <div class="form-group">
-                    <label>הוספת שיעור</label>
-                    <select id="schoolDay" style="width:100%; padding:8px; margin-bottom:8px; border-radius:8px;">
+            <div id="settings-screens">
+                <div id="screen-school" class="settings-screen" style="display:none;">
+                    <div class="screen-header">
+                        <button class="icon-btn" style="background:#f5f5f5;" onclick="backToSettingsMenu()">🔙</button>
+                        <h3>מערכת שעות</h3>
+                    </div>
+                    <div class="form-group">
+                        <label>הוספת שיעור</label>
+                        <select id="schoolDay" style="width:100%; padding:8px; margin-bottom:8px; border-radius:8px;">
+                            <option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option>
+                            <option value="3">רביעי</option><option value="4">חמישי</option><option value="5">שישי</option>
+                        </select>
+                        <div style="display:flex; gap:10px; margin-bottom:8px;">
+                            <input type="time" id="schoolStart" style="flex:1;"><input type="time" id="schoolEnd" style="flex:1;">
+                        </div>
+                        <input type="text" id="schoolSubject" placeholder="מקצוע (אפשר 'תקופת בוקר')" style="width:100%; padding:8px; margin-bottom:8px;">
+                        <input type="text" id="schoolTeacher" placeholder="מורה / הערות" style="width:100%; padding:8px; margin-bottom:8px;">
+                        <button class="btn-add" style="width:100%;" onclick="addSchoolClass()">הוסף שיעור</button>
+                    </div>
+                    <h4 style="margin-top:15px; margin-bottom:10px;">השיעורים שלי (בחרי יום):</h4>
+                    <select id="viewSchoolDay" onchange="renderSchoolSchedule()" style="width:100%; padding:8px; margin-bottom:10px; border-radius:8px;">
                         <option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option>
                         <option value="3">רביעי</option><option value="4">חמישי</option><option value="5">שישי</option>
                     </select>
-                    <div style="display:flex; gap:10px; margin-bottom:8px;">
-                        <input type="time" id="schoolStart" style="flex:1;"><input type="time" id="schoolEnd" style="flex:1;">
-                    </div>
-                    <input type="text" id="schoolSubject" placeholder="מקצוע (אפשר 'תקופת בוקר')" style="width:100%; padding:8px; margin-bottom:8px;">
-                    <input type="text" id="schoolTeacher" placeholder="מורה / הערות" style="width:100%; padding:8px; margin-bottom:8px;">
-                    <button class="btn-add" style="width:100%;" onclick="addSchoolClass()">הוסף שיעור</button>
+                    <ul class="task-list" id="schoolList"></ul>
                 </div>
-                <h4 style="margin-top:15px; margin-bottom:10px;">השיעורים שלי (בחרי יום):</h4>
-                <select id="viewSchoolDay" onchange="renderSchoolSchedule()" style="width:100%; padding:8px; margin-bottom:10px; border-radius:8px;">
-                    <option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option>
-                    <option value="3">רביעי</option><option value="4">חמישי</option><option value="5">שישי</option>
-                </select>
-                <ul class="task-list" id="schoolList"></ul>
-            </div>
 
-            <div id="tab-periods" class="tab-content">
-                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">הגדירי מקצועות לתקופות. המערכת תזהה לבד במערכת השעות מתי לכתוב מה.</p>
-                <div class="form-group">
-                    <div style="display:flex; gap:10px; margin-bottom:8px;">
-                        <input type="date" id="periodStart" style="flex:1;"><input type="date" id="periodEnd" style="flex:1;">
+                <div id="screen-periods" class="settings-screen" style="display:none;">
+                    <div class="screen-header">
+                        <button class="icon-btn" style="background:#f5f5f5;" onclick="backToSettingsMenu()">🔙</button>
+                        <h3>תקופות לימוד</h3>
                     </div>
-                    <input type="text" id="periodMorning" placeholder="מקצוע בוקר" style="width:100%; padding:8px; margin-bottom:8px;">
-                    <input type="text" id="periodAfternoon" placeholder="מקצוע צהריים" style="width:100%; padding:8px; margin-bottom:8px;">
-                    <button class="btn-add" style="width:100%;" onclick="addPeriod()">שמור תקופה</button>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 10px;">הגדירי מקצועות לתקופות. המערכת תזהה לבד במערכת השעות מתי לכתוב מה.</p>
+                    <div class="form-group">
+                        <div style="display:flex; gap:10px; margin-bottom:8px;">
+                            <input type="date" id="periodStart" style="flex:1;"><input type="date" id="periodEnd" style="flex:1;">
+                        </div>
+                        <input type="text" id="periodMorning" placeholder="מקצוע בוקר" style="width:100%; padding:8px; margin-bottom:8px;">
+                        <input type="text" id="periodAfternoon" placeholder="מקצוע צהריים" style="width:100%; padding:8px; margin-bottom:8px;">
+                        <button class="btn-add" style="width:100%;" onclick="addPeriod()">שמור תקופה</button>
+                    </div>
+                    <ul class="task-list" id="periodsList"></ul>
                 </div>
-                <ul class="task-list" id="periodsList"></ul>
-            </div>
 
-            <div id="tab-volleyball" class="tab-content">
-                <div class="form-group">
-                    <label>הוספת אימון</label>
-                    <select id="volleyDay" style="width:100%; padding:8px; margin-bottom:8px; border-radius:8px;">
-                        <option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option>
-                        <option value="3">רביעי</option><option value="4">חמישי</option><option value="5">שישי</option><option value="6">שבת</option>
-                    </select>
-                    <div style="display:flex; gap:10px; margin-bottom:8px;">
-                        <input type="time" id="volleyStart" style="flex:1;"><input type="time" id="volleyEnd" style="flex:1;">
+                <div id="screen-volleyball" class="settings-screen" style="display:none;">
+                    <div class="screen-header">
+                        <button class="icon-btn" style="background:#f5f5f5;" onclick="backToSettingsMenu()">🔙</button>
+                        <h3>אימוני כדורעף</h3>
                     </div>
-                    <input type="text" id="volleyTeam" placeholder="שם קבוצה (למשל: נערות)" style="width:100%; padding:8px; margin-bottom:8px;">
-                    <button class="btn-add" style="width: 100%; background-color: var(--btn-pink);" onclick="addVolleyTraining()">הוסף אימון</button>
+                    <div class="form-group">
+                        <label>הוספת אימון</label>
+                        <select id="volleyDay" style="width:100%; padding:8px; margin-bottom:8px; border-radius:8px;">
+                            <option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option>
+                            <option value="3">רביעי</option><option value="4">חמישי</option><option value="5">שישי</option><option value="6">שבת</option>
+                        </select>
+                        <div style="display:flex; gap:10px; margin-bottom:8px;">
+                            <input type="time" id="volleyStart" style="flex:1;"><input type="time" id="volleyEnd" style="flex:1;">
+                        </div>
+                        <input type="text" id="volleyTeam" placeholder="שם קבוצה (למשל: נערות)" style="width:100%; padding:8px; margin-bottom:8px;">
+                        <button class="btn-add" style="width: 100%; background-color: var(--btn-pink);" onclick="addVolleyTraining()">הוסף אימון</button>
+                    </div>
+                    <ul class="task-list" id="volleyList"></ul>
                 </div>
-                <ul class="task-list" id="volleyList"></ul>
-            </div>
+                
+                <div id="screen-work" class="settings-screen" style="display:none;">
+                    <div class="screen-header">
+                        <button class="icon-btn" style="background:#f5f5f5;" onclick="backToSettingsMenu()">🔙</button>
+                        <h3>רישום (עבודה)</h3>
+                    </div>
+                    <div class="form-group">
+                        <label>הוספת משמרת</label>
+                        <input type="date" id="workDate" style="width:100%; padding:8px; margin-bottom:8px; border-radius: 8px;">
+                        <input type="time" id="workStart" style="width:100%; padding:8px; margin-bottom:8px;">
+                        <input type="text" id="workLocation" placeholder="איפה את רושמת? (ק.ק / בית הלוחם...)" style="width:100%; padding:8px; margin-bottom:8px;">
+                        <button class="btn-add" style="width: 100%; background-color: #ffcc80; color: #e65100;" onclick="addWorkShift()">הוסף משמרת רישום</button>
+                    </div>
+                    <h4 style="margin-top:15px; margin-bottom:10px;">המשמרות ביום זה:</h4>
+                    <ul class="task-list" id="workList"></ul>
+                </div>
 
-            <div id="tab-general" class="tab-content">
-                <div class="form-group">
-                    <label>הוספת אירוע מיוחד (פגישה, צבא, יציאה...)</label>
-                    <input type="date" id="generalDate" style="width:100%; padding:8px; margin-bottom:8px; border-radius: 8px;">
-                    <div style="display:flex; gap:10px; margin-bottom:8px;">
-                        <input type="time" id="generalStart" style="flex:1;"><input type="time" id="generalEnd" style="flex:1;">
+                <div id="screen-general" class="settings-screen" style="display:none;">
+                    <div class="screen-header">
+                        <button class="icon-btn" style="background:#f5f5f5;" onclick="backToSettingsMenu()">🔙</button>
+                        <h3>אירועים ופגישות</h3>
                     </div>
-                    <input type="text" id="generalTitle" placeholder="מה התכנון?" style="width:100%; padding:8px; margin-bottom:8px;">
-                    <button class="btn-add" style="width: 100%; background-color: #a5d6a7; color: #1b5e20;" onclick="addGeneralEvent()">הוסף אירוע</button>
+                    <div class="form-group">
+                        <label>הוספת אירוע מיוחד</label>
+                        <input type="date" id="generalDate" style="width:100%; padding:8px; margin-bottom:8px; border-radius: 8px;">
+                        <div style="display:flex; gap:10px; margin-bottom:8px;">
+                            <input type="time" id="generalStart" style="flex:1;"><input type="time" id="generalEnd" style="flex:1;">
+                        </div>
+                        <input type="text" id="generalTitle" placeholder="מה התכנון?" style="width:100%; padding:8px; margin-bottom:8px;">
+                        <button class="btn-add" style="width: 100%; background-color: #a5d6a7; color: #1b5e20;" onclick="addGeneralEvent()">הוסף אירוע</button>
+                    </div>
+                    <h4 style="margin-top:15px; margin-bottom:10px;">אירועים ביום זה:</h4>
+                    <ul class="task-list" id="generalList"></ul>
                 </div>
-                <h4 style="margin-top:15px; margin-bottom:10px;">אירועים ביום זה:</h4>
-                <ul class="task-list" id="generalList"></ul>
+                
+                <!-- מסך מבט על מרכז -->
+                <div id="screen-all-events" class="settings-screen" style="display:none;">
+                    <div class="screen-header">
+                        <button class="icon-btn" style="background:#f5f5f5;" onclick="backToSettingsMenu()">🔙</button>
+                        <h3>מבט על: כל האירועים</h3>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="margin-bottom: 10px; color: #e65100;">📝 כל משמרות הרישום (עתידיות):</h4>
+                        <ul class="task-list" id="allWorkList"></ul>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 10px; color: #1b5e20;">📅 כל האירועים והפגישות (עתידיים):</h4>
+                        <ul class="task-list" id="allGeneralList"></ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -950,33 +1020,44 @@
         let volleyScheduleData = JSON.parse(localStorage.getItem('shellyVolley')) || { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[] };
         let periodsData = JSON.parse(localStorage.getItem('shellyPeriods')) || [];
         let generalEventsData = JSON.parse(localStorage.getItem('shellyGeneralEvents')) || {};
+        let workData = JSON.parse(localStorage.getItem('shellyWork')) || {};
 
         function saveScheduleData() {
             localStorage.setItem('shellySchool', JSON.stringify(schoolScheduleData));
             localStorage.setItem('shellyVolley', JSON.stringify(volleyScheduleData));
             localStorage.setItem('shellyPeriods', JSON.stringify(periodsData));
             localStorage.setItem('shellyGeneralEvents', JSON.stringify(generalEventsData));
+            localStorage.setItem('shellyWork', JSON.stringify(workData));
             renderTodaySchedule();
         }
 
         function openSettings() {
             document.getElementById('settingsModal').style.display = 'flex';
+            backToSettingsMenu(); // מתחילים במסך התפריט
             document.getElementById('viewSchoolDay').value = viewDate.getDay() > 5 ? 0 : viewDate.getDay();
             
-            // מכוון את התאריך של האירועים המיוחדים לתאריך שצפינו בו בדאשבורד
+            // מכוון את התאריך של האירועים המיוחדים והעבודה לתאריך שצפינו בו בדאשבורד
             const yyyy = viewDate.getFullYear();
             const mm = String(viewDate.getMonth() + 1).padStart(2, '0');
             const dd = String(viewDate.getDate()).padStart(2, '0');
-            document.getElementById('generalDate').value = `${yyyy}-${mm}-${dd}`;
+            const formattedDate = `${yyyy}-${mm}-${dd}`;
             
-            renderSchoolSchedule(); renderVolleySchedule(); renderPeriodsList(); renderGeneralEvents();
+            document.getElementById('generalDate').value = formattedDate;
+            document.getElementById('workDate').value = formattedDate;
+            
+            renderSchoolSchedule(); renderVolleySchedule(); renderPeriodsList(); renderGeneralEvents(); renderWorkList();
         }
         function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
-        function switchSettingsTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById('tab-' + tabId).classList.add('active');
+        
+        function openSettingsScreen(screenId) {
+            document.getElementById('settings-main-menu').style.display = 'none';
+            document.querySelectorAll('.settings-screen').forEach(el => el.style.display = 'none');
+            document.getElementById('screen-' + screenId).style.display = 'block';
+        }
+        
+        function backToSettingsMenu() {
+            document.querySelectorAll('.settings-screen').forEach(el => el.style.display = 'none');
+            document.getElementById('settings-main-menu').style.display = 'flex';
         }
 
         function addPeriod() {
@@ -1080,9 +1161,91 @@
                 list.innerHTML = '<div style="font-size:12px; color:#666; text-align:center;">אין אירועים בתאריך זה</div>';
             }
         }
-
-        // מרענן את רשימת האירועים אם משנים את התאריך בחלון ההגדרות
         document.getElementById('generalDate').addEventListener('change', renderGeneralEvents);
+
+        // --- רישום (עבודה) ---
+        function addWorkShift() {
+            const dateStr = document.getElementById('workDate').value;
+            const start = document.getElementById('workStart').value;
+            const location = document.getElementById('workLocation').value.trim();
+            
+            if(!dateStr || !start || !location) return alert("שלי, חסר כאן משהו (תאריך, שעת התחלה או מיקום)");
+            
+            if(!workData[dateStr]) workData[dateStr] = [];
+            workData[dateStr].push({ start, location });
+            workData[dateStr].sort((a,b) => a.start.localeCompare(b.start));
+            
+            saveScheduleData(); renderWorkList();
+            document.getElementById('workLocation').value = '';
+        }
+
+        function deleteWorkShift(dateStr, i) { 
+            workData[dateStr].splice(i, 1); 
+            if(workData[dateStr].length === 0) delete workData[dateStr];
+            saveScheduleData(); renderWorkList(); 
+        }
+
+        function renderWorkList() {
+            const list = document.getElementById('workList'); 
+            list.innerHTML = '';
+            const dateStr = document.getElementById('workDate').value;
+            
+            if(workData[dateStr]) {
+                workData[dateStr].forEach((w, i) => {
+                    const li = document.createElement('li'); li.className = 'task-item ts-work';
+                    li.innerHTML = `<div class="task-header"><div><strong>${w.start}</strong>: 📝 רישום ב${w.location}</div><button class="icon-btn" onclick="deleteWorkShift('${dateStr}', ${i})">🗑️</button></div>`;
+                    list.appendChild(li);
+                });
+            } else {
+                list.innerHTML = '<div style="font-size:12px; color:#666; text-align:center;">אין משמרות רישום בתאריך זה</div>';
+            }
+        }
+        document.getElementById('workDate').addEventListener('change', renderWorkList);
+
+        // --- ריכוז אירועים ומשמרות למסך "מבט על" ---
+        function renderAllEvents() {
+            const workList = document.getElementById('allWorkList');
+            const genList = document.getElementById('allGeneralList');
+            workList.innerHTML = '';
+            genList.innerHTML = '';
+
+            // מקבל את התאריך של היום בפורמט YYYY-MM-DD
+            const localTodayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+            // משמרות רישום
+            const workDates = Object.keys(workData).sort();
+            let workCount = 0;
+            workDates.forEach(date => {
+                if(date >= localTodayStr) {
+                    workData[date].forEach((w, i) => {
+                        const li = document.createElement('li'); li.className = 'task-item ts-work';
+                        const d = new Date(date);
+                        const dateStr = d.toLocaleDateString('he-IL', {day:'2-digit', month:'2-digit', year:'2-digit'});
+                        li.innerHTML = `<div class="task-header"><div><strong>${dateStr} | ${w.start}</strong>: רישום ב${w.location}</div><button class="icon-btn" onclick="deleteWorkShift('${date}', ${i}); setTimeout(renderAllEvents, 50);">🗑️</button></div>`;
+                        workList.appendChild(li);
+                        workCount++;
+                    });
+                }
+            });
+            if (workCount === 0) workList.innerHTML = '<div style="font-size:13px; color:#666;">אין משמרות רישום עתידיות</div>';
+
+            // אירועים ופגישות
+            const genDates = Object.keys(generalEventsData).sort();
+            let genCount = 0;
+            genDates.forEach(date => {
+                if(date >= localTodayStr) {
+                    generalEventsData[date].forEach((ev, i) => {
+                        const li = document.createElement('li'); li.className = 'task-item ts-general';
+                        const d = new Date(date);
+                        const dateStr = d.toLocaleDateString('he-IL', {day:'2-digit', month:'2-digit', year:'2-digit'});
+                        li.innerHTML = `<div class="task-header"><div><strong>${dateStr} | ${ev.start}</strong>: ${ev.title}</div><button class="icon-btn" onclick="deleteGeneralEvent('${date}', ${i}); setTimeout(renderAllEvents, 50);">🗑️</button></div>`;
+                        genList.appendChild(li);
+                        genCount++;
+                    });
+                }
+            });
+            if (genCount === 0) genList.innerHTML = '<div style="font-size:13px; color:#666;">אין אירועים עתידיים</div>';
+        }
 
         function resolveSubjectText(subjectRaw) {
             if(!subjectRaw) return "";
@@ -1098,19 +1261,35 @@
             return resolved;
         }
 
-        function renderTodaySchedule() {
+        let isDashScheduleExpanded = false;
+        let isStudyScheduleExpanded = false;
+        
+        function toggleDashScheduleExpanded() {
+            isDashScheduleExpanded = !isDashScheduleExpanded;
+            renderDashSchedule(false);
+        }
+        
+        function toggleStudyScheduleExpanded() {
+            isStudyScheduleExpanded = !isStudyScheduleExpanded;
+            renderStudySchedule(false);
+        }
+
+        function renderTodaySchedule(resetExpand = true) {
+            renderDashSchedule(resetExpand);
+            renderStudySchedule(resetExpand);
+        }
+
+        function renderDashSchedule(resetExpand = true) {
+            if (resetExpand) isDashScheduleExpanded = false; // כברירת מחדל, במעבר יום סוגר בחזרה
             const container = document.getElementById('todayScheduleContainer'); container.innerHTML = '';
             const dayIdx = viewDate.getDay();
             let events = [];
             
-            if(schoolScheduleData[dayIdx]) {
-                schoolScheduleData[dayIdx].forEach(c => events.push({ type: 'school', start: c.start, end: c.end, title: resolveSubjectText(c.subject), sub: c.teacher }));
-            }
             if(volleyScheduleData[dayIdx]) {
                 volleyScheduleData[dayIdx].forEach(t => events.push({ type: 'volley', start: t.start, end: t.end, title: '🏐 אימון כדורעף: ' + t.team }));
             }
             
-            // הוספת אירועים שונים לפי התאריך הנבחר
+            // הוספת אירועים ועבודה לפי התאריך הנבחר
             const yyyy = viewDate.getFullYear();
             const mm = String(viewDate.getMonth() + 1).padStart(2, '0');
             const dd = String(viewDate.getDate()).padStart(2, '0');
@@ -1119,26 +1298,92 @@
             if(generalEventsData[viewDateStr]) {
                 generalEventsData[viewDateStr].forEach(ev => events.push({ type: 'general', start: ev.start, end: ev.end, title: '🗓️ ' + ev.title }));
             }
+            if(workData[viewDateStr]) {
+                workData[viewDateStr].forEach(w => events.push({ type: 'work', start: w.start, end: '', title: '📝 רישום ב' + w.location }));
+            }
             
             events.sort((a,b) => a.start.localeCompare(b.start));
             if(events.length === 0) {
-                return container.innerHTML = '<div style="text-align:center; padding:10px; color:#666;">אין לו"ז מוגדר ליום זה! חופש! 🎉</div>';
+                return container.innerHTML = '<div style="text-align:center; padding:10px; color:#666;">אין לו"ז אישי מוגדר ליום זה. זמן לנוח! 🎉</div>';
             }
             
-            events.forEach(ev => {
+            events.forEach((ev, idx) => {
                 const div = document.createElement('div');
-                
-                let typeClass = 'ts-school';
-                if(ev.type === 'volley') typeClass = 'ts-volleyball';
-                if(ev.type === 'general') typeClass = 'ts-general';
-                
+                let typeClass = ev.type === 'volley' ? 'ts-volleyball' : (ev.type === 'general' ? 'ts-general' : 'ts-work');
                 div.className = `ts-item ${typeClass}`;
+                
+                if(idx >= 4 && !isDashScheduleExpanded) div.style.display = 'none';
+                
+                div.innerHTML = `<div class="ts-time">${ev.start}</div><div class="ts-details"><span class="ts-subject">${ev.title}</span></div>`;
+                container.appendChild(div);
+            });
+
+            if(events.length > 4) {
+                const btn = document.createElement('button');
+                btn.className = 'btn-show-more';
+                btn.innerText = isDashScheduleExpanded ? "⬆️ הסתר חלק מהלו\"ז" : `⬇️ הראה את כל הלו"ז האישי (${events.length} פעילויות)`;
+                btn.onclick = toggleDashScheduleExpanded;
+                container.appendChild(btn);
+            }
+        }
+
+        function renderStudySchedule(resetExpand = true) {
+            if (resetExpand) isStudyScheduleExpanded = false;
+            const container = document.getElementById('studySchoolScheduleContainer'); 
+            if(!container) return; // הגנה למקרה שהדף עוד לא נטען
+            container.innerHTML = '';
+            const dayIdx = viewDate.getDay();
+            let events = [];
+            
+            if(schoolScheduleData[dayIdx]) {
+                schoolScheduleData[dayIdx].forEach(c => events.push({ type: 'school', start: c.start, end: c.end, title: resolveSubjectText(c.subject), sub: c.teacher }));
+            }
+            
+            events.sort((a,b) => a.start.localeCompare(b.start));
+            if(events.length === 0) {
+                return container.innerHTML = '<div style="text-align:center; padding:10px; color:#666;">אין לימודים היום! חופש! 🏖️</div>';
+            }
+            
+            events.forEach((ev, idx) => {
+                const div = document.createElement('div');
+                div.className = `ts-item ts-school`;
+                
+                if(idx >= 4 && !isStudyScheduleExpanded) div.style.display = 'none';
+                
                 div.innerHTML = `<div class="ts-time">${ev.start}</div><div class="ts-details"><span class="ts-subject">${ev.title}</span>${ev.sub ? `<span class="ts-teacher">${ev.sub}</span>` : ''}</div>`;
                 container.appendChild(div);
             });
+
+            if(events.length > 4) {
+                const btn = document.createElement('button');
+                btn.className = 'btn-show-more';
+                btn.innerText = isStudyScheduleExpanded ? "⬆️ הסתר חלק מהשיעורים" : `⬇️ הראה את כל המערכת (${events.length} שיעורים)`;
+                btn.onclick = toggleStudyScheduleExpanded;
+                container.appendChild(btn);
+            }
+        }
+
+        // --- אוטומציה למחיקת פולין אחרי המסע ---
+        function checkPolandStatus() {
+            const today = new Date();
+            const polandEnd = new Date('2026-10-21T00:00:00'); // היום שאחרי חזרת המשלחת
+            if (today > polandEnd) {
+                const dashCard = document.getElementById('poland-dashboard-card');
+                const goalsCard = document.getElementById('poland-goals-card');
+                if (dashCard) dashCard.style.display = 'none';
+                if (goalsCard) goalsCard.style.display = 'none';
+                
+                // הסרה מהספירה לאחור
+                const polandGoalIdx = customGoals.findIndex(g => g.title.includes('פולין'));
+                if (polandGoalIdx > -1) {
+                    customGoals.splice(polandGoalIdx, 1);
+                    saveCustomGoals();
+                }
+            }
         }
 
         // --- אתחול ראשוני ---
+        checkPolandStatus();
         updateTimerSettings();
         renderTasks();
         renderCustomGoals();
