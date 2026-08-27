@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>המרחב של שלי</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
     <style>
         :root {
             --bg-pink: #fce4ec;
@@ -345,6 +346,7 @@
         .ts-teacher { font-size: 12px; color: #666; }
         .ts-school { border-right: 4px solid var(--btn-blue-hover); }
         .ts-volleyball { border-right: 4px solid var(--btn-pink-hover); }
+        .ts-general { border-right: 4px solid #81c784; } /* פס ירוק עדין לאירועים שונים */
         
         .countdown-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 12px; margin-bottom: 10px; font-weight: 600; }
         .countdown-days { background: var(--btn-purple); padding: 5px 12px; border-radius: 20px; font-size: 14px; }
@@ -358,6 +360,15 @@
 
         .roulette-result { margin-top: 15px; font-size: 18px; font-weight: bold; color: #3949ab; text-align: center; min-height: 27px; }
         .quote-display { font-size: 17px; font-weight: 500; line-height: 1.4; color: #6a1b9a; font-style: italic; text-align: center; min-height: 60px; margin-bottom: 15px;}
+
+        .date-nav { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px; }
+        .date-nav button { padding: 5px 15px; background: rgba(255,255,255,0.5); border-radius: 12px; font-size: 16px; font-weight: bold;}
+        .date-nav-text { font-size: 14px; font-weight: bold; color: var(--text-dark); cursor: pointer; text-align: center; background: rgba(255,255,255,0.6); padding: 5px 15px; border-radius: 12px;}
+        .scrollable-schedule { max-height: 180px; overflow-y: auto; padding-right: 5px; }
+        .badge-hw { background: #e3f2fd; color: #1565c0; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+        .badge-exam { background: #ffebee; color: #c62828; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+        .type-selector { display: flex; gap: 10px; margin-bottom: 8px; }
+        .type-selector label { font-size: 13px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -373,21 +384,35 @@
         
         <div class="header">
             <h1 id="greeting">היי שלי! ✨</h1>
-            <p>המרחב האישי שלך לריכוז והצלחה</p>
+            <div class="date-nav">
+                <button onclick="changeDate(-1)">❮</button>
+                <div class="date-nav-text" onclick="document.getElementById('hiddenDatePicker').showPicker()">
+                    <div id="dayOfWeekDisplay">יום</div>
+                    <div id="dateDisplay">תאריך</div>
+                </div>
+                <input type="date" id="hiddenDatePicker" style="display:none;" onchange="jumpToDate(this.value)">
+                <button onclick="changeDate(1)">❯</button>
+            </div>
+            <button onclick="resetDate()" style="background:none; color:#8e24aa; font-size:12px; padding:0; box-shadow:none; margin-top:5px; display:none; margin-left:auto; margin-right:auto;" id="btnResetDate">חזור להיום</button>
         </div>
 
         <!-- ==================== עמוד ראשי (דאשבורד) ==================== -->
         <div id="page-dashboard" class="page-section active">
             
             <div class="section-card">
-                <div class="section-title">📅 הלו"ז שלי להיום</div>
-                <div class="today-schedule-box" id="todayScheduleContainer">
+                <div class="section-title">📅 הלו"ז ליום הנבחר</div>
+                <div class="today-schedule-box scrollable-schedule" id="todayScheduleContainer">
                     <!-- יאוכלס ע"י JS -->
                 </div>
             </div>
 
             <div class="section-card">
-                <div class="section-title">🇮🇱 המפגש הבא למסע לפולין</div>
+                <div class="section-title">⚠️ קרוב וחשוב (מבחנים ועבודות)</div>
+                <ul class="task-list scrollable-schedule" id="dashboardHWList"></ul>
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">🇮🇱 אירוע פולין הקרוב ליום זה</div>
                 <div id="nextPolandEvent" style="font-size: 15px; line-height: 1.4;"></div>
             </div>
 
@@ -431,16 +456,20 @@
 
             <!-- מעקב שיעורי בית ועבודות (חדש!) -->
             <div class="section-card">
-                <div class="section-title">📚 שיעורי בית ועבודות להגשה</div>
+                <div class="section-title">📚 לוח מבחנים ועבודות הגשה</div>
                 <div class="input-group">
-                    <input type="text" id="hwTitle" placeholder="איזו עבודה? (למשל: דוח מעבדה בפיזיקה)">
-                    <div class="input-row">
-                        <input type="date" id="hwDate" style="flex: 1;" title="תאריך הגשה">
-                        <input type="text" id="hwDetails" placeholder="פרטים נוספים / עמודים..." style="flex: 2;">
+                    <div class="type-selector">
+                        <label><input type="radio" name="hwType" value="hw" checked> עבודה/שיעורים</label>
+                        <label><input type="radio" name="hwType" value="exam"> מבחן/בוחן</label>
                     </div>
-                    <button class="btn-add" onclick="addHW()">הוסיפי מטלה</button>
+                    <input type="text" id="hwTitle" placeholder="נושא (למשל: דוח מעבדה / מבחן בפיזיקה)">
+                    <div class="input-row">
+                        <input type="date" id="hwDate" style="flex: 1;" title="תאריך הגשה/מבחן">
+                        <input type="text" id="hwDetails" placeholder="פרטים נוספים..." style="flex: 2;">
+                    </div>
+                    <button class="btn-add" onclick="addHW()">שמירה</button>
                 </div>
-                <ul class="task-list" id="hwList"></ul>
+                <ul class="task-list scrollable-schedule" id="hwList"></ul>
             </div>
 
             <!-- משימות קטנות -->
@@ -450,7 +479,7 @@
                     <input type="text" id="taskInput" placeholder="מה נלמד היום?" onkeypress="if(event.key==='Enter') addTask()">
                     <button class="btn-add" onclick="addTask()">+</button>
                 </div>
-                <ul class="task-list" id="taskList"></ul>
+                <ul class="task-list scrollable-schedule" id="taskList"></ul>
             </div>
 
             <!-- רולטת הפסקות -->
@@ -466,19 +495,18 @@
             
             <div class="section-card">
                 <div class="section-title">🎯 המטרות הגדולות שלי</div>
-                <div class="countdown-item">
-                    <span>פסיכומטרי 📝</span>
-                    <span class="countdown-days" id="psychometryCountdown">סופר...</span>
-                </div>
-                <div class="countdown-item">
-                    <span>המסע לפולין ✈️</span>
-                    <span class="countdown-days" id="polandCountdown">סופר...</span>
+                <div id="customGoalsContainer"></div>
+                
+                <div class="input-row" style="margin-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
+                    <input type="text" id="newGoalTitle" placeholder="מטרה חדשה (למשל: יומולדת)">
+                    <input type="date" id="newGoalDate">
+                    <button class="btn-add" onclick="addCustomGoal()">+</button>
                 </div>
             </div>
 
             <div class="section-card">
                 <div class="section-title">📅 הלו"ז המלא לפולין</div>
-                <div class="poland-timeline" id="polandTimeline">
+                <div class="poland-timeline scrollable-schedule" id="polandTimeline" style="max-height: 250px;">
                     <!-- יאוכלס ע"י JS -->
                 </div>
             </div>
@@ -507,6 +535,7 @@
                 <button class="tab-btn active" onclick="switchSettingsTab('school')">📚 מערכת</button>
                 <button class="tab-btn" onclick="switchSettingsTab('periods')">🔄 תקופות</button>
                 <button class="tab-btn" onclick="switchSettingsTab('volleyball')">🏐 כדורעף</button>
+                <button class="tab-btn" onclick="switchSettingsTab('general')">📅 אירועים</button>
             </div>
 
             <div id="tab-school" class="tab-content active">
@@ -559,10 +588,52 @@
                 </div>
                 <ul class="task-list" id="volleyList"></ul>
             </div>
+
+            <div id="tab-general" class="tab-content">
+                <div class="form-group">
+                    <label>הוספת אירוע מיוחד (פגישה, צבא, יציאה...)</label>
+                    <input type="date" id="generalDate" style="width:100%; padding:8px; margin-bottom:8px; border-radius: 8px;">
+                    <div style="display:flex; gap:10px; margin-bottom:8px;">
+                        <input type="time" id="generalStart" style="flex:1;"><input type="time" id="generalEnd" style="flex:1;">
+                    </div>
+                    <input type="text" id="generalTitle" placeholder="מה התכנון?" style="width:100%; padding:8px; margin-bottom:8px;">
+                    <button class="btn-add" style="width: 100%; background-color: #a5d6a7; color: #1b5e20;" onclick="addGeneralEvent()">הוסף אירוע</button>
+                </div>
+                <h4 style="margin-top:15px; margin-bottom:10px;">אירועים ביום זה:</h4>
+                <ul class="task-list" id="generalList"></ul>
+            </div>
         </div>
     </div>
 
     <script>
+        // --- ניהול תאריך נבחר ---
+        let viewDate = new Date();
+        const daysHe = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+        
+        function changeDate(offset) {
+            viewDate.setDate(viewDate.getDate() + offset);
+            updateDateUI();
+        }
+        function jumpToDate(val) {
+            if(val) { viewDate = new Date(val); updateDateUI(); }
+        }
+        function resetDate() {
+            viewDate = new Date(); updateDateUI();
+        }
+        
+        function updateDateUI() {
+            const today = new Date();
+            const isToday = viewDate.toDateString() === today.toDateString();
+            
+            document.getElementById('dayOfWeekDisplay').innerText = `יום ${daysHe[viewDate.getDay()]}`;
+            document.getElementById('dateDisplay').innerText = viewDate.toLocaleDateString('he-IL', {day:'2-digit', month:'2-digit', year:'numeric'});
+            document.getElementById('btnResetDate').style.display = isToday ? 'none' : 'block';
+            
+            renderTodaySchedule();
+            renderPolandEvents();
+            renderHW(); // Updates both lists
+        }
+
         // --- ניווט בין דפים ---
         function switchPage(pageId) {
             document.querySelectorAll('.page-section').forEach(page => page.classList.remove('active'));
@@ -595,14 +666,18 @@
         ];
 
         function renderPolandEvents() {
-            const now = new Date();
             const timeline = document.getElementById('polandTimeline');
             const nextEventBox = document.getElementById('nextPolandEvent');
+            timeline.innerHTML = '';
             let nextEventFound = false;
+
+            // איתור האירוע הבא ביחס לתאריך המוצג במסך
+            const startOfDay = new Date(viewDate);
+            startOfDay.setHours(0,0,0,0);
 
             polandEvents.forEach(ev => {
                 const evDate = new Date(ev.date);
-                const isPast = evDate < now;
+                const isPast = evDate < startOfDay;
                 const div = document.createElement('div');
                 div.className = `poland-event ${isPast ? 'past' : ''}`;
                 const dateStr = evDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
@@ -616,19 +691,52 @@
                 }
                 timeline.appendChild(div);
             });
+            if(!nextEventFound) nextEventBox.innerHTML = "אין אירועים קרובים.";
         }
 
         // --- שעוני עצר (קאונטדאונים) ---
-        function updateCountdowns() {
+        let customGoals = JSON.parse(localStorage.getItem('shellyCustomGoals')) || [
+            { title: 'פסיכומטרי 📝', date: '2026-09-02T00:00:00' },
+            { title: 'המסע לפולין ✈️', date: '2026-10-14T00:00:00' }
+        ];
+
+        function saveCustomGoals() { localStorage.setItem('shellyCustomGoals', JSON.stringify(customGoals)); }
+
+        function addCustomGoal() {
+            const title = document.getElementById('newGoalTitle').value.trim();
+            const date = document.getElementById('newGoalDate').value;
+            if(title && date) {
+                customGoals.push({ title, date });
+                saveCustomGoals();
+                renderCustomGoals();
+                document.getElementById('newGoalTitle').value = '';
+                document.getElementById('newGoalDate').value = '';
+            }
+        }
+        function deleteCustomGoal(i) { customGoals.splice(i, 1); saveCustomGoals(); renderCustomGoals(); }
+
+        function renderCustomGoals() {
             const today = new Date();
-            const psychoDate = new Date('2026-09-02T00:00:00'); // תאריך פסיכומטרי מעודכן
-            const polandDate = new Date('2026-10-14T00:00:00');
-
-            const diffPsycho = Math.ceil((psychoDate - today) / (1000 * 60 * 60 * 24));
-            const diffPoland = Math.ceil((polandDate - today) / (1000 * 60 * 60 * 24));
-
-            document.getElementById('psychometryCountdown').innerText = diffPsycho > 0 ? `עוד ${diffPsycho} ימים` : 'הגיע הזמן!';
-            document.getElementById('polandCountdown').innerText = diffPoland > 0 ? `עוד ${diffPoland} ימים` : 'הגיע הזמן!';
+            today.setHours(0,0,0,0);
+            const container = document.getElementById('customGoalsContainer');
+            container.innerHTML = '';
+            
+            customGoals.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach((goal, i) => {
+                const gDate = new Date(goal.date);
+                const diff = Math.ceil((gDate - today) / (1000 * 60 * 60 * 24));
+                const text = diff > 0 ? `עוד ${diff} ימים` : (diff === 0 ? 'היום!' : 'עבר');
+                
+                const div = document.createElement('div');
+                div.className = 'countdown-item';
+                div.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <button class="icon-btn" style="font-size:12px; color:red;" onclick="deleteCustomGoal(${i})">✖</button>
+                        <span>${goal.title}</span>
+                    </div>
+                    <span class="countdown-days">${text}</span>
+                `;
+                container.appendChild(div);
+            });
         }
 
         // --- מוטיבציה ---
@@ -637,7 +745,7 @@
             "קוד בפייתון או ב-Java לא ייכתב מעצמו. עוד 25 דקות פוקוס ואת אלופה! 💻",
             "הפסיכומטרי ב-2 בספטמבר מתקרב. כל תרגול עכשיו שווה המון נקודות אחר כך. 📝",
             "תזכרי למה התחלת! המטרות שלך גדולות ואת לגמרי מסוגלת לכבוש אותן. ✨",
-            "קחי נשימה עמוקה. 25 דקות של למידה, ואז פינוק מהרולטה. יאללה! 🚀"
+            "קחי נשימה עמוקה. קצת פוקוס, ואז פינוק מהרולטה. יאללה! 🚀"
         ];
         function generateMotivation() {
             const el = document.getElementById('quoteText');
@@ -648,7 +756,7 @@
             }, 200);
         }
 
-        // --- טיימר פומודורו (משופר ומותאם אישית) ---
+        // --- טיימר פומודורו ---
         let timerInterval;
         let focusMins = 25;
         let breakMins = 5;
@@ -659,7 +767,7 @@
         function updateTimerSettings() {
             focusMins = parseInt(document.getElementById('focusInput').value) || 25;
             breakMins = parseInt(document.getElementById('breakInput').value) || 5;
-            if(!isRunning) setTimerMode(currentMode); // עדכון התצוגה מיד
+            if(!isRunning) setTimerMode(currentMode); 
         }
 
         function updateDisplay() {
@@ -712,7 +820,7 @@
         }
         function resetTimer() { setTimerMode(currentMode); }
 
-        // --- שיעורי בית ועבודות (חדש) ---
+        // --- שיעורי בית ומבחנים ---
         let hwList = JSON.parse(localStorage.getItem('shellyHW')) || [];
         function saveHW() { localStorage.setItem('shellyHW', JSON.stringify(hwList)); }
         
@@ -720,9 +828,11 @@
             const title = document.getElementById('hwTitle').value.trim();
             const date = document.getElementById('hwDate').value;
             const details = document.getElementById('hwDetails').value.trim();
+            const type = document.querySelector('input[name="hwType"]:checked').value;
+            
             if(!title) return;
             
-            hwList.push({ title, date, details, completed: false });
+            hwList.push({ title, date, details, type, completed: false });
             saveHW(); renderHW();
             document.getElementById('hwTitle').value = '';
             document.getElementById('hwDate').value = '';
@@ -733,22 +843,32 @@
         function deleteHW(i) { hwList.splice(i, 1); saveHW(); renderHW(); }
 
         function renderHW() {
-            const list = document.getElementById('hwList');
-            list.innerHTML = '';
-            // מיון לפי תאריך (מה שקרוב יותר קודם)
-            hwList.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach((hw, i) => {
+            const listStudy = document.getElementById('hwList');
+            const listDash = document.getElementById('dashboardHWList');
+            listStudy.innerHTML = '';
+            listDash.innerHTML = '';
+            
+            // תאריך גבול לתצוגה בדאשבורד (עד 7 ימים קדימה מהתאריך הנבחר)
+            const futureLimit = new Date(viewDate);
+            futureLimit.setDate(futureLimit.getDate() + 7);
+            const startOfDay = new Date(viewDate);
+            startOfDay.setHours(0,0,0,0);
+
+            hwList.sort((a,b) => new Date(a.date || '2099') - new Date(b.date || '2099')).forEach((hw, i) => {
                 const li = document.createElement('li');
                 li.className = `task-item ${hw.completed ? 'completed' : ''}`;
                 
                 let dateBadge = '';
+                let typeBadge = hw.type === 'exam' ? '<span class="badge-exam">מבחן</span>' : '<span class="badge-hw">עבודה</span>';
+                let hwDateObj = hw.date ? new Date(hw.date) : null;
+
                 if(hw.date) {
-                    const d = new Date(hw.date);
-                    dateBadge = `<span class="hw-date">להגשה: ${d.toLocaleDateString('he-IL', {day:'2-digit', month:'2-digit'})}</span>`;
+                    dateBadge = `<span class="hw-date">למתי: ${hwDateObj.toLocaleDateString('he-IL', {day:'2-digit', month:'2-digit'})}</span>`;
                 }
 
-                li.innerHTML = `
+                const innerHTML = `
                     <div class="task-header">
-                        <span class="task-text" style="font-weight:600;">${hw.title}</span>
+                        <span class="task-text" style="font-weight:600;">${typeBadge} ${hw.title}</span>
                         <div class="task-actions">
                             <button class="icon-btn" onclick="toggleHW(${i})">${hw.completed ? '✅' : '⬜'}</button>
                             <button class="icon-btn" onclick="deleteHW(${i})">🗑️</button>
@@ -756,8 +876,28 @@
                     </div>
                     ${hw.details || dateBadge ? `<div class="hw-details">${dateBadge} ${hw.details}</div>` : ''}
                 `;
-                list.appendChild(li);
+                
+                li.innerHTML = innerHTML;
+                listStudy.appendChild(li);
+
+                // הוספה לדאשבורד אם זה רלוונטי
+                if(!hw.completed && hwDateObj && hwDateObj >= startOfDay && hwDateObj <= futureLimit) {
+                    const liDash = document.createElement('li');
+                    liDash.className = 'task-item';
+                    liDash.innerHTML = `
+                        <div class="task-header">
+                            <span class="task-text" style="font-weight:600;">${typeBadge} ${hw.title}</span>
+                            <span style="font-size: 12px; color: #d32f2f; font-weight:bold;">${hwDateObj.toLocaleDateString('he-IL', {day:'2-digit', month:'2-digit'})}</span>
+                        </div>
+                        ${hw.details ? `<div class="hw-details">${hw.details}</div>` : ''}
+                    `;
+                    listDash.appendChild(liDash);
+                }
             });
+
+            if(listDash.children.length === 0) {
+                listDash.innerHTML = '<div style="text-align:center; padding:10px; color:#666; font-size:13px;">אין עבודות או מבחנים קרובים, אפשר לנשום! 😊</div>';
+            }
         }
 
         // --- משימות רגילות ---
@@ -805,22 +945,31 @@
             }, 100);
         }
 
-        // --- ניהול יומן ומערכת (שמירה ב-LocalStorage) ---
+        // --- ניהול יומן ומערכת ---
         let schoolScheduleData = JSON.parse(localStorage.getItem('shellySchool')) || { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[] };
         let volleyScheduleData = JSON.parse(localStorage.getItem('shellyVolley')) || { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[] };
         let periodsData = JSON.parse(localStorage.getItem('shellyPeriods')) || [];
+        let generalEventsData = JSON.parse(localStorage.getItem('shellyGeneralEvents')) || {};
 
         function saveScheduleData() {
             localStorage.setItem('shellySchool', JSON.stringify(schoolScheduleData));
             localStorage.setItem('shellyVolley', JSON.stringify(volleyScheduleData));
             localStorage.setItem('shellyPeriods', JSON.stringify(periodsData));
+            localStorage.setItem('shellyGeneralEvents', JSON.stringify(generalEventsData));
             renderTodaySchedule();
         }
 
         function openSettings() {
             document.getElementById('settingsModal').style.display = 'flex';
-            document.getElementById('viewSchoolDay').value = new Date().getDay() > 5 ? 0 : new Date().getDay();
-            renderSchoolSchedule(); renderVolleySchedule(); renderPeriodsList();
+            document.getElementById('viewSchoolDay').value = viewDate.getDay() > 5 ? 0 : viewDate.getDay();
+            
+            // מכוון את התאריך של האירועים המיוחדים לתאריך שצפינו בו בדאשבורד
+            const yyyy = viewDate.getFullYear();
+            const mm = String(viewDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(viewDate.getDate()).padStart(2, '0');
+            document.getElementById('generalDate').value = `${yyyy}-${mm}-${dd}`;
+            
+            renderSchoolSchedule(); renderVolleySchedule(); renderPeriodsList(); renderGeneralEvents();
         }
         function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
         function switchSettingsTab(tabId) {
@@ -884,22 +1033,63 @@
         function deleteVolleyTraining(day, i) { volleyScheduleData[day].splice(i, 1); saveScheduleData(); renderVolleySchedule(); }
         function renderVolleySchedule() {
             const list = document.getElementById('volleyList'); list.innerHTML = '';
-            const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
             for(let d=0; d<7; d++) {
                 volleyScheduleData[d].forEach((t, i) => {
                     const li = document.createElement('li'); li.className = 'task-item ts-volleyball';
-                    li.innerHTML = `<div class="task-header"><div><strong>יום ${days[d]} ${t.start}-${t.end||'?'}</strong>: ${t.team}</div><button class="icon-btn" onclick="deleteVolleyTraining(${d}, ${i})">🗑️</button></div>`;
+                    li.innerHTML = `<div class="task-header"><div><strong>יום ${daysHe[d]} ${t.start}-${t.end||'?'}</strong>: ${t.team}</div><button class="icon-btn" onclick="deleteVolleyTraining(${d}, ${i})">🗑️</button></div>`;
                     list.appendChild(li);
                 });
             }
         }
 
+        function addGeneralEvent() {
+            const dateStr = document.getElementById('generalDate').value;
+            const start = document.getElementById('generalStart').value;
+            const end = document.getElementById('generalEnd').value;
+            const title = document.getElementById('generalTitle').value.trim();
+            
+            if(!dateStr || !start || !title) return alert("חסרים פרטים (תאריך, שעת התחלה או תיאור)");
+            
+            if(!generalEventsData[dateStr]) generalEventsData[dateStr] = [];
+            generalEventsData[dateStr].push({ start, end, title });
+            generalEventsData[dateStr].sort((a,b) => a.start.localeCompare(b.start));
+            
+            saveScheduleData(); renderGeneralEvents();
+            document.getElementById('generalTitle').value = '';
+        }
+
+        function deleteGeneralEvent(dateStr, i) { 
+            generalEventsData[dateStr].splice(i, 1); 
+            if(generalEventsData[dateStr].length === 0) delete generalEventsData[dateStr];
+            saveScheduleData(); 
+            renderGeneralEvents(); 
+        }
+
+        function renderGeneralEvents() {
+            const list = document.getElementById('generalList'); 
+            list.innerHTML = '';
+            const dateStr = document.getElementById('generalDate').value;
+            
+            if(generalEventsData[dateStr]) {
+                generalEventsData[dateStr].forEach((ev, i) => {
+                    const li = document.createElement('li'); li.className = 'task-item ts-general';
+                    li.innerHTML = `<div class="task-header"><div><strong>${ev.start}-${ev.end||'?'}</strong>: ${ev.title}</div><button class="icon-btn" onclick="deleteGeneralEvent('${dateStr}', ${i})">🗑️</button></div>`;
+                    list.appendChild(li);
+                });
+            } else {
+                list.innerHTML = '<div style="font-size:12px; color:#666; text-align:center;">אין אירועים בתאריך זה</div>';
+            }
+        }
+
+        // מרענן את רשימת האירועים אם משנים את התאריך בחלון ההגדרות
+        document.getElementById('generalDate').addEventListener('change', renderGeneralEvents);
+
         function resolveSubjectText(subjectRaw) {
             if(!subjectRaw) return "";
-            const todayStr = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            const currentStr = viewDate.toISOString().split('T')[0];
             let resolved = subjectRaw;
             if(subjectRaw.includes("בוקר") || subjectRaw.includes("צוהריים") || subjectRaw.includes("צהריים")) {
-                const p = periodsData.find(x => todayStr >= x.start && todayStr <= x.end);
+                const p = periodsData.find(x => currentStr >= x.start && currentStr <= x.end);
                 if(p) {
                     if(subjectRaw.includes("בוקר") && p.morning) resolved = `${subjectRaw} (${p.morning})`;
                     if((subjectRaw.includes("צוהריים") || subjectRaw.includes("צהריים")) && p.afternoon) resolved = `${subjectRaw} (${p.afternoon})`;
@@ -910,17 +1100,39 @@
 
         function renderTodaySchedule() {
             const container = document.getElementById('todayScheduleContainer'); container.innerHTML = '';
-            const todayDay = new Date().getDay();
+            const dayIdx = viewDate.getDay();
             let events = [];
-            if(schoolScheduleData[todayDay]) schoolScheduleData[todayDay].forEach(c => events.push({ type: 'school', start: c.start, end: c.end, title: resolveSubjectText(c.subject), sub: c.teacher }));
-            if(volleyScheduleData[todayDay]) volleyScheduleData[todayDay].forEach(t => events.push({ type: 'volley', start: t.start, end: t.end, title: '🏐 אימון כדורעף: ' + t.team }));
+            
+            if(schoolScheduleData[dayIdx]) {
+                schoolScheduleData[dayIdx].forEach(c => events.push({ type: 'school', start: c.start, end: c.end, title: resolveSubjectText(c.subject), sub: c.teacher }));
+            }
+            if(volleyScheduleData[dayIdx]) {
+                volleyScheduleData[dayIdx].forEach(t => events.push({ type: 'volley', start: t.start, end: t.end, title: '🏐 אימון כדורעף: ' + t.team }));
+            }
+            
+            // הוספת אירועים שונים לפי התאריך הנבחר
+            const yyyy = viewDate.getFullYear();
+            const mm = String(viewDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(viewDate.getDate()).padStart(2, '0');
+            const viewDateStr = `${yyyy}-${mm}-${dd}`;
+            
+            if(generalEventsData[viewDateStr]) {
+                generalEventsData[viewDateStr].forEach(ev => events.push({ type: 'general', start: ev.start, end: ev.end, title: '🗓️ ' + ev.title }));
+            }
             
             events.sort((a,b) => a.start.localeCompare(b.start));
-            if(events.length === 0) return container.innerHTML = '<div style="text-align:center; padding:10px; color:#666;">אין לו"ז מוגדר להיום! חופש! 🎉</div>';
+            if(events.length === 0) {
+                return container.innerHTML = '<div style="text-align:center; padding:10px; color:#666;">אין לו"ז מוגדר ליום זה! חופש! 🎉</div>';
+            }
             
             events.forEach(ev => {
                 const div = document.createElement('div');
-                div.className = `ts-item ${ev.type === 'school' ? 'ts-school' : 'ts-volleyball'}`;
+                
+                let typeClass = 'ts-school';
+                if(ev.type === 'volley') typeClass = 'ts-volleyball';
+                if(ev.type === 'general') typeClass = 'ts-general';
+                
+                div.className = `ts-item ${typeClass}`;
                 div.innerHTML = `<div class="ts-time">${ev.start}</div><div class="ts-details"><span class="ts-subject">${ev.title}</span>${ev.sub ? `<span class="ts-teacher">${ev.sub}</span>` : ''}</div>`;
                 container.appendChild(div);
             });
@@ -928,12 +1140,10 @@
 
         // --- אתחול ראשוני ---
         updateTimerSettings();
-        renderHW();
         renderTasks();
-        renderPolandEvents();
-        updateCountdowns();
-        renderTodaySchedule();
-        generateMotivation(); // מוטיבציה ראשונית
+        renderCustomGoals();
+        updateDateUI(); // טוען את הלו"ז, פולין והמטלות לפי התאריך של היום
+        generateMotivation(); 
 
     </script>
 </body>
