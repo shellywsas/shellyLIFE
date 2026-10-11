@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>המרחב של שלי</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+    
+    <!-- Firebase SDK (Compat) לסנכרון אוטומטי מ-StudyStreak -->
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore-compat.js"></script>
+    
     <style>
         :root {
             --bg-pink: #fce4ec;
@@ -140,13 +145,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
-            font-size: 13px;
+            gap: 3px;
+            font-size: 12px;
             color: #757575;
-            padding: 8px 15px;
+            padding: 8px 10px;
             border-radius: 20px;
             cursor: pointer;
             transition: all 0.3s ease;
+            flex: 1;
         }
         
         .nav-btn.active {
@@ -380,7 +386,64 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* סנכרון StudyStreak ותגיות */
+        .badge-sync { background: #f3e8ff; color: #7e22ce; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; border: 1px solid #d8b4fe; }
+        .badge-work { background: #fff7ed; color: #c2410c; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; border: 1px solid #fed7aa; }
+        .ts-exam { border-right: 4px solid #9333ea; }
+        
+        .sync-status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11.5px;
+            padding: 4px 12px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #6b21a8;
+            font-weight: 700;
+            margin-top: 8px;
+            box-shadow: 0 2px 8px rgba(106, 27, 154, 0.08);
+            border: 1px solid rgba(225, 190, 231, 0.8);
+        }
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 6px #22c55e;
+            animation: pulseDot 2s infinite;
+        }
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        /* כרטיסיית משמרות רישום */
+        .work-highlight-card {
+            background: linear-gradient(135deg, rgba(255, 247, 237, 0.95), rgba(254, 243, 199, 0.9)) !important;
+            border: 1.5px solid #fed7aa !important;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.08) !important;
+        }
+        .work-stat-box {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.85);
+            padding: 12px;
+            border-radius: 14px;
+            margin-bottom: 12px;
+            text-align: center;
+            border: 1px solid #fed7aa;
+        }
+        .work-stat-num {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ea580c;
+        }
+        .work-stat-label {
+            font-size: 11px;
+            color: #7c2d12;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -401,11 +464,26 @@
                 <button onclick="changeDate(1)">❯</button>
             </div>
             <button onclick="resetDate()" style="background:none; color:#8e24aa; font-size:12px; padding:0; box-shadow:none; margin-top:5px; display:none; margin-left:auto; margin-right:auto;" id="btnResetDate">חזור להיום</button>
+            <div id="syncStatusBadge" class="sync-status-indicator" title="סנכרון אוטומטי מ-StudyStreak">
+                <span class="sync-dot"></span>
+                <span id="syncStatusText">מתחבר ל-StudyStreak (שליי)...</span>
+            </div>
         </div>
 
         <!-- ==================== עמוד ראשי (דאשבורד) ==================== -->
         <div id="page-dashboard" class="page-section active">
             
+            <!-- כרטיסיית משמרת רישום קרובה (עבודה) -->
+            <div class="section-card work-highlight-card" id="dashboardNextWorkCard">
+                <div class="section-title" style="color: #9a3412;">
+                    <span>📝 משמרת רישום קרובה</span>
+                    <button onclick="switchPage('work')" style="background: none; border: none; box-shadow: none; padding: 0; font-size: 13px; color: #ea580c; font-weight: bold; cursor: pointer;">לכל המשמרות ❯</button>
+                </div>
+                <div id="nextWorkShiftContent">
+                    <!-- יאוכלס ע"י JS -->
+                </div>
+            </div>
+
             <div class="section-card">
                 <div class="section-title">📅 הלו"ז ליום הנבחר</div>
                 <div class="today-schedule-box" id="todayScheduleContainer">
@@ -530,6 +608,51 @@
             </div>
         </div>
 
+        <!-- ==================== עמוד משמרות רישום (עבודה) ==================== -->
+        <div id="page-work" class="page-section">
+            <div class="section-card work-highlight-card">
+                <div class="section-title" style="color: #9a3412;">
+                    <span>📝 הוספת משמרת רישום</span>
+                </div>
+                <div class="input-group">
+                    <label style="font-size: 13px; font-weight: bold; color: #9a3412;">תאריך המשמרת:</label>
+                    <input type="date" id="pageWorkDate">
+                    <div class="input-row">
+                        <div style="flex: 1;">
+                            <label style="font-size: 12px; font-weight: bold; color: #9a3412;">שעת התחלה:</label>
+                            <input type="time" id="pageWorkStart">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 12px; font-weight: bold; color: #9a3412;">שעת סיום (אופציונלי):</label>
+                            <input type="time" id="pageWorkEnd">
+                        </div>
+                    </div>
+                    <label style="font-size: 13px; font-weight: bold; color: #9a3412;">מיקום (איפה את רושמת?):</label>
+                    <input type="text" id="pageWorkLocation" placeholder="למשל: ק.ק / בית הלוחם / סניף...">
+                    <button class="btn-add" style="background-color: #ffb74d; color: #7c2d12; font-weight: 800; width: 100%; margin-top: 6px;" onclick="addWorkShiftFromPage()">+ שמירת משמרת רישום</button>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">📊 סיכום החודש ברישום</div>
+                <div class="work-stat-box">
+                    <div>
+                        <div class="work-stat-num" id="statShiftCount">0</div>
+                        <div class="work-stat-label">משמרות החודש</div>
+                    </div>
+                    <div>
+                        <div class="work-stat-num" id="statHoursCount">0 שעות</div>
+                        <div class="work-stat-label">שעות מתוכננות</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">📋 כל משמרות הרישום</div>
+                <ul class="task-list scrollable-schedule" id="pageWorkList" style="max-height: 320px;"></ul>
+            </div>
+        </div>
+
     </div>
 
     <nav class="bottom-nav">
@@ -538,6 +661,9 @@
         </button>
         <button class="nav-btn" id="nav-study" onclick="switchPage('study')">
             <span class="nav-icon">📖</span>למידה
+        </button>
+        <button class="nav-btn" id="nav-work" onclick="switchPage('work')">
+            <span class="nav-icon">📝</span>רישום
         </button>
         <button class="nav-btn" id="nav-goals" onclick="switchPage('goals')">
             <span class="nav-icon">🎯</span>מטרות
@@ -676,6 +802,238 @@
     </div>
 
     <script>
+        // --- סנכרון נתונים עם StudyStreak (משתמש "שליי" ב-Firebase) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBMfjLTktAFc5uFRN8Oda8-_u29KykDAYA",
+            authDomain: "loos-77484.firebaseapp.com",
+            projectId: "loos-77484",
+            storageBucket: "loos-77484.firebasestorage.app",
+            messagingSenderId: "944527580287",
+            appId: "1:944527580287:web:3c6ccacac1a0a8121a334a"
+        };
+
+        let syncedExams = JSON.parse(localStorage.getItem('shellySyncedExams')) || [];
+        let syncedSubjectsMap = JSON.parse(localStorage.getItem('shellySyncedSubjects')) || {};
+
+        function initStudyStreakSync() {
+            const badgeText = document.getElementById('syncStatusText');
+            const badgeDot = document.querySelector('.sync-dot');
+
+            if (typeof firebase === 'undefined') {
+                if (badgeText) badgeText.innerText = 'מצב מקומי (מציג נתונים שמורים)';
+                if (badgeDot) badgeDot.style.background = '#eab308';
+                return;
+            }
+
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                const db = firebase.firestore();
+
+                // האזנה בזמן אמת למסמך המשתמש "שליי"
+                db.collection("users").doc("שליי").onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data() || {};
+
+                        // עדכון מפת המקצועות
+                        if (Array.isArray(data.subjects)) {
+                            syncedSubjectsMap = {};
+                            data.subjects.forEach(s => {
+                                if (s && s.id && s.name) syncedSubjectsMap[s.id] = s.name.trim();
+                            });
+                            localStorage.setItem('shellySyncedSubjects', JSON.stringify(syncedSubjectsMap));
+                        }
+
+                        // עדכון רשימת המבחנים
+                        if (Array.isArray(data.exams)) {
+                            syncedExams = data.exams.map(e => ({
+                                id: e.id || ('ex_' + Math.random()),
+                                examName: e.examName || 'מבחן',
+                                date: e.date || e.examDate || '',
+                                subjectId: e.subjectId || '',
+                                subjectName: syncedSubjectsMap[e.subjectId] || '',
+                                grade: e.grade || null
+                            }));
+
+                            localStorage.setItem('shellySyncedExams', JSON.stringify(syncedExams));
+
+                            if (badgeText) badgeText.innerText = `סונכרן מ-StudyStreak: ${syncedExams.length} מבחנים ✨`;
+                            if (badgeDot) badgeDot.style.background = '#22c55e';
+
+                            renderHW();
+                            renderTodaySchedule();
+                        }
+                    } else {
+                        if (badgeText) badgeText.innerText = 'משתמש לא נמצא ב-Firebase';
+                    }
+                }, (err) => {
+                    console.warn("Firestore sync warning:", err);
+                    if (badgeText) badgeText.innerText = 'סנכרון מקומי (נתונים שמורים)';
+                    if (badgeDot) badgeDot.style.background = '#eab308';
+                });
+            } catch (e) {
+                console.warn("Firebase init error:", e);
+                if (badgeText) badgeText.innerText = 'שגיאת התחברות ל-Firebase';
+            }
+        }
+
+        // --- ניהול משמרות רישום (דאשבורד ועמוד ייעודי) ---
+        function renderDashboardWorkWidget() {
+            const container = document.getElementById('nextWorkShiftContent');
+            if (!container) return;
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            const upcoming = [];
+            Object.keys(workData).sort().forEach(dateStr => {
+                const d = new Date(dateStr + 'T00:00:00');
+                if (d >= today && Array.isArray(workData[dateStr])) {
+                    workData[dateStr].forEach((shift, idx) => {
+                        upcoming.push({ dateStr, dateObj: d, shift, idx });
+                    });
+                }
+            });
+
+            if (upcoming.length === 0) {
+                container.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.75); padding:10px 14px; border-radius:12px;">
+                        <span style="font-size:13px; color:#9a3412; font-weight:600;">אין משמרות רישום קרובות</span>
+                        <button onclick="switchPage('work')" class="btn-add" style="background:#fed7aa; color:#7c2d12; font-size:12px; padding:6px 12px; border-radius:10px;">+ הוספה מהירה</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const next = upcoming[0];
+            const diffDays = Math.round((next.dateObj - today) / (1000 * 60 * 60 * 24));
+            let whenBadge = '';
+            if (diffDays === 0) whenBadge = '<span style="background:#ef4444; color:white; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:bold;">היום! ⚡</span>';
+            else if (diffDays === 1) whenBadge = '<span style="background:#f97316; color:white; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:bold;">מחר</span>';
+            else whenBadge = `<span style="background:#ffedd5; color:#c2410c; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:bold;">בעוד ${diffDays} ימים</span>`;
+
+            const formattedDate = next.dateObj.toLocaleDateString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit' });
+            const timeText = next.shift.end ? `${next.shift.start} - ${next.shift.end}` : next.shift.start;
+
+            container.innerHTML = `
+                <div style="background:rgba(255,255,255,0.92); padding:12px 14px; border-radius:14px; display:flex; flex-direction:column; gap:6px; box-shadow:0 2px 8px rgba(249,115,22,0.06);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size:15px; font-weight:800; color:#9a3412;">
+                            📍 רישום ב${next.shift.location}
+                        </div>
+                        ${whenBadge}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#c2410c; font-weight:600;">
+                        <span>📅 ${formattedDate}</span>
+                        <span>⏰ ${timeText}</span>
+                    </div>
+                    ${upcoming.length > 1 ? `
+                        <div style="border-top:1px dashed #fed7aa; padding-top:6px; margin-top:3px; font-size:12px; color:#9a3412; display:flex; justify-content:space-between;">
+                            <span>עוד ${upcoming.length - 1} משמרות מתוכננות</span>
+                            <a href="javascript:void(0)" onclick="switchPage('work')" style="color:#ea580c; font-weight:bold; text-decoration:none;">לצפייה בכולן ❯</a>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderPageWorkList() {
+            const list = document.getElementById('pageWorkList');
+            if (!list) return;
+            list.innerHTML = '';
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            let totalMonthShifts = 0;
+            let totalMonthHours = 0;
+
+            const allShifts = [];
+            Object.keys(workData).sort().forEach(dateStr => {
+                if (Array.isArray(workData[dateStr])) {
+                    const d = new Date(dateStr + 'T00:00:00');
+                    workData[dateStr].forEach((w, i) => {
+                        allShifts.push({ dateStr, dateObj: d, shift: w, idx: i });
+
+                        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+                            totalMonthShifts++;
+                            if (w.start && w.end) {
+                                const [sh, sm] = w.start.split(':').map(Number);
+                                const [eh, em] = w.end.split(':').map(Number);
+                                const diff = (eh * 60 + em) - (sh * 60 + sm);
+                                if (diff > 0) totalMonthHours += diff / 60;
+                            } else {
+                                totalMonthHours += 4; // ברירת מחדל של 4 שעות למשמרת
+                            }
+                        }
+                    });
+                }
+            });
+
+            const statShifts = document.getElementById('statShiftCount');
+            const statHours = document.getElementById('statHoursCount');
+            if (statShifts) statShifts.innerText = totalMonthShifts;
+            if (statHours) statHours.innerText = totalMonthHours ? (Number.isInteger(totalMonthHours) ? totalMonthHours : totalMonthHours.toFixed(1)) + ' שעות' : '0 שעות';
+
+            const dateInput = document.getElementById('pageWorkDate');
+            if (dateInput && !dateInput.value) {
+                const localTodayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                dateInput.value = localTodayStr;
+            }
+
+            if (allShifts.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:15px; color:#666; font-size:13px;">טרם נוספו משמרות רישום. הוסיפי את המשמרת הראשונה למעלה! ✍️</div>';
+                return;
+            }
+
+            allShifts.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'task-item ts-work';
+                const formattedDate = item.dateObj.toLocaleDateString('he-IL', { weekday: 'short', day: '2-digit', month: '2-digit', year: '2-digit' });
+                const timeStr = item.shift.end ? `${item.shift.start} - ${item.shift.end}` : item.shift.start;
+
+                li.innerHTML = `
+                    <div class="task-header">
+                        <div>
+                            <span class="badge-work">משמרת</span>
+                            <strong style="color:#7c2d12;">${formattedDate}</strong> | ⏰ ${timeStr}
+                            <div style="margin-top:3px; font-weight:700; color:#9a3412;">📍 ${item.shift.location}</div>
+                        </div>
+                        <button class="icon-btn" onclick="deleteWorkShift('${item.dateStr}', ${item.idx}); renderPageWorkList(); renderDashboardWorkWidget();" title="מחיקת משמרת">🗑️</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function addWorkShiftFromPage() {
+            const dateStr = document.getElementById('pageWorkDate').value;
+            const start = document.getElementById('pageWorkStart').value;
+            const end = document.getElementById('pageWorkEnd').value;
+            const location = document.getElementById('pageWorkLocation').value.trim();
+
+            if (!dateStr || !start || !location) {
+                return alert("שלי, נא למלא תאריך, שעת התחלה ומיקום למשמרת 📝");
+            }
+
+            if (!workData[dateStr]) workData[dateStr] = [];
+            workData[dateStr].push({ start, end, location });
+            workData[dateStr].sort((a,b) => a.start.localeCompare(b.start));
+
+            saveScheduleData();
+            renderPageWorkList();
+            renderDashboardWorkWidget();
+            renderTodaySchedule();
+
+            document.getElementById('pageWorkLocation').value = '';
+            document.getElementById('pageWorkStart').value = '';
+            document.getElementById('pageWorkEnd').value = '';
+
+            alert("משמרת הרישום נשמרה בהצלחה! 🎉");
+        }
+
         // --- ניהול תאריך נבחר ---
         let viewDate = new Date();
         const daysHe = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
@@ -702,6 +1060,7 @@
             renderTodaySchedule();
             renderPolandEvents();
             renderHW(); // Updates both lists
+            renderDashboardWorkWidget();
         }
 
         // --- ניווט בין דפים ---
@@ -709,8 +1068,16 @@
             document.querySelectorAll('.page-section').forEach(page => page.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             
-            document.getElementById('page-' + pageId).classList.add('active');
-            document.getElementById('nav-' + pageId).classList.add('active');
+            const pageEl = document.getElementById('page-' + pageId);
+            const navEl = document.getElementById('nav-' + pageId);
+            if (pageEl) pageEl.classList.add('active');
+            if (navEl) navEl.classList.add('active');
+
+            if (pageId === 'work') {
+                renderPageWorkList();
+            } else if (pageId === 'dashboard') {
+                renderDashboardWorkWidget();
+            }
         }
 
         // --- ברכת שלום ---
@@ -915,49 +1282,92 @@
         function renderHW() {
             const listStudy = document.getElementById('hwList');
             const listDash = document.getElementById('dashboardHWList');
+            if (!listStudy || !listDash) return;
             listStudy.innerHTML = '';
             listDash.innerHTML = '';
             
-            // תאריך גבול לתצוגה בדאשבורד (עד 7 ימים קדימה מהתאריך הנבחר)
+            // תאריך גבול לתצוגה בדאשבורד (עד 21 ימים קדימה מהתאריך הנבחר)
             const futureLimit = new Date(viewDate);
-            futureLimit.setDate(futureLimit.getDate() + 7);
+            futureLimit.setDate(futureLimit.getDate() + 21);
             const startOfDay = new Date(viewDate);
             startOfDay.setHours(0,0,0,0);
 
-            hwList.sort((a,b) => new Date(a.date || '2099') - new Date(b.date || '2099')).forEach((hw, i) => {
+            // מיזוג משימות מקומיות עם מבחנים מסונכרנים מ-StudyStreak
+            const localItems = hwList.map((hw, i) => ({
+                title: hw.title,
+                date: hw.date,
+                details: hw.details || '',
+                type: hw.type,
+                completed: !!hw.completed,
+                isSynced: false,
+                localIdx: i
+            }));
+
+            const syncedItems = (syncedExams || []).map(se => ({
+                title: se.examName + (se.subjectName ? ` (${se.subjectName})` : ''),
+                date: se.date,
+                details: se.grade ? `ציון: ${se.grade}` : 'סונכרן אוטומטית מ-StudyStreak Pro ✨',
+                type: 'exam',
+                completed: (se.grade !== undefined && se.grade !== null && se.grade !== ''),
+                isSynced: true,
+                id: se.id
+            }));
+
+            const allHW = [...localItems, ...syncedItems];
+            allHW.sort((a,b) => new Date(a.date || '2099') - new Date(b.date || '2099'));
+
+            allHW.forEach((hw) => {
                 const li = document.createElement('li');
                 li.className = `task-item ${hw.completed ? 'completed' : ''}`;
-                
-                let dateBadge = '';
-                let typeBadge = hw.type === 'exam' ? '<span class="badge-exam">מבחן</span>' : '<span class="badge-hw">עבודה</span>';
-                let hwDateObj = hw.date ? new Date(hw.date) : null;
+                if (hw.isSynced) li.style.borderRight = '4px solid #9333ea';
 
-                if(hw.date) {
+                let dateBadge = '';
+                let typeBadge = hw.isSynced 
+                    ? '<span class="badge-sync">StudyStreak</span>' 
+                    : (hw.type === 'exam' ? '<span class="badge-exam">מבחן</span>' : '<span class="badge-hw">עבודה</span>');
+
+                let hwDateObj = hw.date ? new Date(hw.date + 'T00:00:00') : null;
+
+                if (hw.date) {
                     dateBadge = `<span class="hw-date">למתי: ${hwDateObj.toLocaleDateString('he-IL', {day:'2-digit', month:'2-digit'})}</span>`;
                 }
 
-                const innerHTML = `
+                const actionsHtml = hw.isSynced 
+                    ? `<span style="font-size:11px; color:#9333ea; font-weight:bold; background:#f3e8ff; padding:2px 8px; border-radius:10px;">סונכרן 🔄</span>`
+                    : `
+                        <button class="icon-btn" onclick="toggleHW(${hw.localIdx})">${hw.completed ? '✅' : '⬜'}</button>
+                        <button class="icon-btn" onclick="deleteHW(${hw.localIdx})">🗑️</button>
+                    `;
+
+                li.innerHTML = `
                     <div class="task-header">
                         <span class="task-text" style="font-weight:600;">${typeBadge} ${hw.title}</span>
-                        <div class="task-actions">
-                            <button class="icon-btn" onclick="toggleHW(${i})">${hw.completed ? '✅' : '⬜'}</button>
-                            <button class="icon-btn" onclick="deleteHW(${i})">🗑️</button>
-                        </div>
+                        <div class="task-actions">${actionsHtml}</div>
                     </div>
                     ${hw.details || dateBadge ? `<div class="hw-details">${dateBadge} ${hw.details}</div>` : ''}
                 `;
                 
-                li.innerHTML = innerHTML;
                 listStudy.appendChild(li);
 
-                // הוספה לדאשבורד אם זה רלוונטי
-                if(!hw.completed && hwDateObj && hwDateObj >= startOfDay && hwDateObj <= futureLimit) {
+                // הוספה לדאשבורד "קרוב וחשוב" אם זה רלוונטי
+                if (!hw.completed && hwDateObj && hwDateObj >= startOfDay && hwDateObj <= futureLimit) {
+                    const diffDays = Math.round((hwDateObj - startOfDay) / (1000 * 60 * 60 * 24));
+                    let countdownText = '';
+                    if (diffDays === 0) countdownText = '<span style="color:#ef4444; font-weight:bold;">היום! 🚨</span>';
+                    else if (diffDays === 1) countdownText = '<span style="color:#ea580c; font-weight:bold;">מחר! ⏰</span>';
+                    else countdownText = `<span style="color:#7c3aed; font-weight:bold;">בעוד ${diffDays} ימים</span>`;
+
                     const liDash = document.createElement('li');
                     liDash.className = 'task-item';
+                    if (hw.isSynced) liDash.style.borderRight = '4px solid #9333ea';
+
                     liDash.innerHTML = `
                         <div class="task-header">
-                            <span class="task-text" style="font-weight:600;">${typeBadge} ${hw.title}</span>
-                            <span style="font-size: 12px; color: #d32f2f; font-weight:bold;">${hwDateObj.toLocaleDateString('he-IL', {day:'2-digit', month:'2-digit'})}</span>
+                            <span class="task-text" style="font-weight:700;">${typeBadge} ${hw.title}</span>
+                            <div style="text-align:left;">
+                                <div style="font-size: 12px; color: ${hw.isSynced ? '#7c3aed' : '#d32f2f'}; font-weight:bold;">${hwDateObj.toLocaleDateString('he-IL', {day:'2-digit', month:'2-digit'})}</div>
+                                <div style="font-size: 11px;">${countdownText}</div>
+                            </div>
                         </div>
                         ${hw.details ? `<div class="hw-details">${hw.details}</div>` : ''}
                     `;
@@ -965,8 +1375,8 @@
                 }
             });
 
-            if(listDash.children.length === 0) {
-                listDash.innerHTML = '<div style="text-align:center; padding:10px; color:#666; font-size:13px;">אין עבודות או מבחנים קרובים, אפשר לנשום! 😊</div>';
+            if (listDash.children.length === 0) {
+                listDash.innerHTML = '<div style="text-align:center; padding:15px; color:#6b21a8; font-size:13px; font-weight:600; background:rgba(255,255,255,0.7); border-radius:12px;">אין עבודות או מבחנים קרובים ב-3 השבועות הקרובים, אפשר לנשום! 😊</div>';
             }
         }
 
@@ -1299,7 +1709,19 @@
                 generalEventsData[viewDateStr].forEach(ev => events.push({ type: 'general', start: ev.start, end: ev.end, title: '🗓️ ' + ev.title }));
             }
             if(workData[viewDateStr]) {
-                workData[viewDateStr].forEach(w => events.push({ type: 'work', start: w.start, end: '', title: '📝 רישום ב' + w.location }));
+                workData[viewDateStr].forEach(w => events.push({ type: 'work', start: w.start, end: w.end || '', title: '📝 רישום ב' + w.location + (w.end ? ` (${w.start}-${w.end})` : '') }));
+            }
+            
+            // מבחנים מסונכרנים מ-StudyStreak ביום זה
+            if (Array.isArray(syncedExams)) {
+                syncedExams.filter(e => e.date === viewDateStr).forEach(e => {
+                    events.push({
+                        type: 'exam',
+                        start: 'בוקר',
+                        end: '',
+                        title: `🎯 מבחן: ${e.examName}${e.subjectName ? ' (' + e.subjectName + ')' : ''}`
+                    });
+                });
             }
             
             events.sort((a,b) => a.start.localeCompare(b.start));
@@ -1309,7 +1731,7 @@
             
             events.forEach((ev, idx) => {
                 const div = document.createElement('div');
-                let typeClass = ev.type === 'volley' ? 'ts-volleyball' : (ev.type === 'general' ? 'ts-general' : 'ts-work');
+                let typeClass = ev.type === 'volley' ? 'ts-volleyball' : (ev.type === 'general' ? 'ts-general' : (ev.type === 'exam' ? 'ts-exam' : 'ts-work'));
                 div.className = `ts-item ${typeClass}`;
                 
                 if(idx >= 4 && !isDashScheduleExpanded) div.style.display = 'none';
@@ -1387,8 +1809,11 @@
         updateTimerSettings();
         renderTasks();
         renderCustomGoals();
+        renderDashboardWorkWidget();
+        renderPageWorkList();
         updateDateUI(); // טוען את הלו"ז, פולין והמטלות לפי התאריך של היום
         generateMotivation(); 
+        initStudyStreakSync(); // חיבור וסנכרון מבחנים אוטומטי מ-StudyStreak Pro (משתמש "שליי")
 
     </script>
 </body>
