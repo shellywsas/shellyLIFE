@@ -444,6 +444,131 @@
             color: #7c2d12;
             font-weight: 700;
         }
+
+        /* מילוי מהיר ומרובה של משמרות */
+        .quick-loc-btn {
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1.5px solid #fed7aa;
+            background: white;
+            color: #9a3412;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(249, 115, 22, 0.06);
+        }
+        .quick-loc-btn.active {
+            background: #ea580c !important;
+            color: white !important;
+            border-color: #c2410c !important;
+            box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25) !important;
+        }
+        .bulk-calendar {
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 16px;
+            padding: 12px;
+            border: 1.5px solid #fed7aa;
+            margin: 10px 0;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.05);
+        }
+        .bulk-calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: 800;
+            color: #9a3412;
+            font-size: 14px;
+        }
+        .bulk-cal-nav {
+            background: #ffedd5;
+            border: none;
+            color: #9a3412;
+            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: none;
+        }
+        .bulk-cal-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #c2410c;
+            margin-bottom: 6px;
+        }
+        .bulk-cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        .bulk-cal-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.85);
+            color: #4a148c;
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .bulk-cal-day:hover {
+            background: #ffedd5;
+            color: #9a3412;
+        }
+        .bulk-cal-day.selected {
+            background: linear-gradient(135deg, #f97316, #ea580c) !important;
+            color: white !important;
+            font-weight: 800;
+            box-shadow: 0 2px 6px rgba(234, 88, 12, 0.35);
+            border-color: #c2410c !important;
+        }
+        .bulk-cal-day.today {
+            border: 2px solid #ea580c;
+        }
+        .bulk-cal-day.empty {
+            background: transparent;
+            border: none;
+            cursor: default;
+        }
+        .selected-dates-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            max-height: 85px;
+            overflow-y: auto;
+        }
+        .selected-date-chip {
+            background: #ffedd5;
+            color: #9a3412;
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid #fed7aa;
+        }
+        .selected-date-chip button {
+            background: none;
+            border: none;
+            padding: 0;
+            box-shadow: none;
+            color: #ea580c;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -612,24 +737,72 @@
         <div id="page-work" class="page-section">
             <div class="section-card work-highlight-card">
                 <div class="section-title" style="color: #9a3412;">
-                    <span>📝 הוספת משמרת רישום</span>
+                    <span>⚡ מילוי משמרות רישום</span>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" id="tabBulkMode" onclick="setWorkAddMode('bulk')" class="quick-loc-btn active" style="padding:4px 10px; font-size:12px;">מרובה ⚡</button>
+                        <button type="button" id="tabSingleMode" onclick="setWorkAddMode('single')" class="quick-loc-btn" style="padding:4px 10px; font-size:12px; background:white; color:#9a3412;">בודדת</button>
+                    </div>
                 </div>
-                <div class="input-group">
-                    <label style="font-size: 13px; font-weight: bold; color: #9a3412;">תאריך המשמרת:</label>
-                    <input type="date" id="pageWorkDate">
-                    <div class="input-row">
-                        <div style="flex: 1;">
-                            <label style="font-size: 12px; font-weight: bold; color: #9a3412;">שעת התחלה:</label>
-                            <input type="time" id="pageWorkStart">
+
+                <!-- בחירת מיקום מהירה (ק.ק / בית הלוחם) -->
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: bold; color: #9a3412; display:block; margin-bottom:6px;">בחרי מיקום:</label>
+                    <div style="display: flex; gap: 8px; align-items:center;">
+                        <button type="button" class="quick-loc-btn active" id="locBtnKK" onclick="selectQuickLocation('ק.ק')">🏢 ק.ק</button>
+                        <button type="button" class="quick-loc-btn" id="locBtnBL" onclick="selectQuickLocation('בית הלוחם')">🏅 בית הלוחם</button>
+                        <input type="text" id="customWorkLocation" placeholder="או הקלידי מיקום אחר..." style="flex:1; padding:8px 12px; font-size:13px;" oninput="onCustomLocationInput(this.value)">
+                    </div>
+                </div>
+
+                <!-- שעת התחלה (ברירת מחדל 20:30) -->
+                <div class="input-row" style="margin-bottom: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: #9a3412;">שעת התחלה:</label>
+                        <input type="time" id="bulkWorkStart" value="20:30">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: #9a3412;">שעת סיום (אופציונלי):</label>
+                        <input type="time" id="bulkWorkEnd">
+                    </div>
+                </div>
+
+                <!-- מצב הוספה מרובה (לוח שנה אינטראקטיבי לבחירת תאריכים מרובים) -->
+                <div id="bulkAddContainer">
+                    <label style="font-size: 12px; font-weight: bold; color: #9a3412; display:block;">בחרי את כל התאריכים (לחצי על הימים בלוח):</label>
+                    <div class="bulk-calendar">
+                        <div class="bulk-calendar-header">
+                            <button type="button" class="bulk-cal-nav" onclick="changeBulkCalMonth(-1)">❮</button>
+                            <span id="bulkCalMonthYear">אוקטובר 2026</span>
+                            <button type="button" class="bulk-cal-nav" onclick="changeBulkCalMonth(1)">❯</button>
                         </div>
-                        <div style="flex: 1;">
-                            <label style="font-size: 12px; font-weight: bold; color: #9a3412;">שעת סיום (אופציונלי):</label>
-                            <input type="time" id="pageWorkEnd">
+                        <div class="bulk-cal-weekdays">
+                            <div>א</div><div>ב</div><div>ג</div><div>ד</div><div>ה</div><div>ו</div><div>ש</div>
+                        </div>
+                        <div class="bulk-cal-grid" id="bulkCalGrid">
+                            <!-- יאוכלס ע"י JS -->
                         </div>
                     </div>
-                    <label style="font-size: 13px; font-weight: bold; color: #9a3412;">מיקום (איפה את רושמת?):</label>
-                    <input type="text" id="pageWorkLocation" placeholder="למשל: ק.ק / בית הלוחם / סניף...">
-                    <button class="btn-add" style="background-color: #ffb74d; color: #7c2d12; font-weight: 800; width: 100%; margin-top: 6px;" onclick="addWorkShiftFromPage()">+ שמירת משמרת רישום</button>
+                    
+                    <div id="selectedDatesSummary" style="margin-bottom: 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#9a3412; font-weight:bold;">
+                            <span id="selectedDatesCount">נבחרו 0 תאריכים</span>
+                            <button type="button" onclick="clearSelectedDates()" style="background:none; border:none; box-shadow:none; color:#ea580c; font-size:11px; cursor:pointer; font-weight:bold;">איפוס בחירה</button>
+                        </div>
+                        <div class="selected-dates-chips" id="selectedDatesChips"></div>
+                    </div>
+
+                    <button type="button" class="btn-add" style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; font-weight: 800; width: 100%; font-size:14.5px; padding:12px; margin-top:4px;" onclick="saveBulkWorkShifts()" id="btnSaveBulk">
+                        🚀 הוספת המשמרות בבת אחת (ב-20:30 ב-ק.ק)
+                    </button>
+                </div>
+
+                <!-- מצב משמרת בודדת -->
+                <div id="singleAddContainer" style="display:none; margin-top:5px;">
+                    <label style="font-size: 12px; font-weight: bold; color: #9a3412;">תאריך המשמרת:</label>
+                    <input type="date" id="pageWorkDate">
+                    <button type="button" class="btn-add" style="background-color: #ffb74d; color: #7c2d12; font-weight: 800; width: 100%; margin-top: 10px;" onclick="addSingleWorkShift()">
+                        + שמירת משמרת בודדת
+                    </button>
                 </div>
             </div>
 
@@ -1008,14 +1181,204 @@
             });
         }
 
-        function addWorkShiftFromPage() {
+        // --- משמרות רישום: מילוי מהיר ומרובה (ק.ק / בית הלוחם ב-20:30) ---
+        let selectedBulkDates = new Set();
+        let bulkCalCurrentDate = new Date();
+        let selectedQuickLoc = 'ק.ק';
+        let currentWorkAddMode = 'bulk';
+        const monthsHe = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+
+        function setWorkAddMode(mode) {
+            currentWorkAddMode = mode;
+            const btnBulk = document.getElementById('tabBulkMode');
+            const btnSingle = document.getElementById('tabSingleMode');
+            const containerBulk = document.getElementById('bulkAddContainer');
+            const containerSingle = document.getElementById('singleAddContainer');
+
+            if (mode === 'bulk') {
+                if (btnBulk) { btnBulk.className = 'quick-loc-btn active'; btnBulk.style.background = '#ea580c'; btnBulk.style.color = 'white'; }
+                if (btnSingle) { btnSingle.className = 'quick-loc-btn'; btnSingle.style.background = 'white'; btnSingle.style.color = '#9a3412'; }
+                if (containerBulk) containerBulk.style.display = 'block';
+                if (containerSingle) containerSingle.style.display = 'none';
+                renderBulkCalendar();
+                renderSelectedDatesChips();
+            } else {
+                if (btnSingle) { btnSingle.className = 'quick-loc-btn active'; btnSingle.style.background = '#ea580c'; btnSingle.style.color = 'white'; }
+                if (btnBulk) { btnBulk.className = 'quick-loc-btn'; btnBulk.style.background = 'white'; btnBulk.style.color = '#9a3412'; }
+                if (containerBulk) containerBulk.style.display = 'none';
+                if (containerSingle) containerSingle.style.display = 'block';
+            }
+        }
+
+        function selectQuickLocation(loc) {
+            selectedQuickLoc = loc;
+            const customInput = document.getElementById('customWorkLocation');
+            if (customInput) customInput.value = '';
+
+            const btnKK = document.getElementById('locBtnKK');
+            const btnBL = document.getElementById('locBtnBL');
+            if (btnKK) {
+                if (loc === 'ק.ק') { btnKK.classList.add('active'); btnKK.style.background = '#ea580c'; btnKK.style.color = 'white'; }
+                else { btnKK.classList.remove('active'); btnKK.style.background = 'white'; btnKK.style.color = '#9a3412'; }
+            }
+            if (btnBL) {
+                if (loc === 'בית הלוחם') { btnBL.classList.add('active'); btnBL.style.background = '#ea580c'; btnBL.style.color = 'white'; }
+                else { btnBL.classList.remove('active'); btnBL.style.background = 'white'; btnBL.style.color = '#9a3412'; }
+            }
+            renderSelectedDatesChips();
+        }
+
+        function onCustomLocationInput(val) {
+            const trimmed = (val || '').trim();
+            const btnKK = document.getElementById('locBtnKK');
+            const btnBL = document.getElementById('locBtnBL');
+            if (trimmed) {
+                selectedQuickLoc = trimmed;
+                if (btnKK) { btnKK.classList.remove('active'); btnKK.style.background = 'white'; btnKK.style.color = '#9a3412'; }
+                if (btnBL) { btnBL.classList.remove('active'); btnBL.style.background = 'white'; btnBL.style.color = '#9a3412'; }
+            } else {
+                selectedQuickLoc = 'ק.ק';
+                if (btnKK) { btnKK.classList.add('active'); btnKK.style.background = '#ea580c'; btnKK.style.color = 'white'; }
+            }
+            renderSelectedDatesChips();
+        }
+
+        function renderBulkCalendar() {
+            const grid = document.getElementById('bulkCalGrid');
+            const monthTitle = document.getElementById('bulkCalMonthYear');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const year = bulkCalCurrentDate.getFullYear();
+            const month = bulkCalCurrentDate.getMonth();
+            if (monthTitle) monthTitle.innerText = `${monthsHe[month]} ${year}`;
+
+            const firstDayIndex = new Date(year, month, 1).getDay(); // 0 is Sunday
+            const totalDays = new Date(year, month + 1, 0).getDate();
+
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+            // תאים ריקים לתחילת החודש
+            for (let i = 0; i < firstDayIndex; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'bulk-cal-day empty';
+                grid.appendChild(empty);
+            }
+
+            // ימי החודש
+            for (let d = 1; d <= totalDays; d++) {
+                const dayDiv = document.createElement('div');
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                
+                dayDiv.className = 'bulk-cal-day';
+                dayDiv.innerText = d;
+
+                if (selectedBulkDates.has(dateStr)) dayDiv.classList.add('selected');
+                if (dateStr === todayStr) dayDiv.classList.add('today');
+
+                dayDiv.onclick = () => toggleBulkDate(dateStr);
+                grid.appendChild(dayDiv);
+            }
+        }
+
+        function toggleBulkDate(dateStr) {
+            if (selectedBulkDates.has(dateStr)) {
+                selectedBulkDates.delete(dateStr);
+            } else {
+                selectedBulkDates.add(dateStr);
+            }
+            renderBulkCalendar();
+            renderSelectedDatesChips();
+        }
+
+        function changeBulkCalMonth(offset) {
+            bulkCalCurrentDate.setMonth(bulkCalCurrentDate.getMonth() + offset);
+            renderBulkCalendar();
+        }
+
+        function clearSelectedDates() {
+            selectedBulkDates.clear();
+            renderBulkCalendar();
+            renderSelectedDatesChips();
+        }
+
+        function renderSelectedDatesChips() {
+            const container = document.getElementById('selectedDatesChips');
+            const countEl = document.getElementById('selectedDatesCount');
+            const btnSave = document.getElementById('btnSaveBulk');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const startVal = (document.getElementById('bulkWorkStart') && document.getElementById('bulkWorkStart').value) || '20:30';
+
+            if (countEl) countEl.innerText = `נבחרו ${selectedBulkDates.size} תאריכים`;
+
+            const sorted = Array.from(selectedBulkDates).sort();
+            sorted.forEach(dateStr => {
+                const d = new Date(dateStr + 'T00:00:00');
+                const chip = document.createElement('span');
+                chip.className = 'selected-date-chip';
+                chip.innerHTML = `
+                    <span>${d.toLocaleDateString('he-IL', { weekday: 'short', day: '2-digit', month: '2-digit' })}</span>
+                    <button type="button" onclick="toggleBulkDate('${dateStr}')" title="הסרה">×</button>
+                `;
+                container.appendChild(chip);
+            });
+
+            if (btnSave) {
+                if (selectedBulkDates.size === 0) {
+                    btnSave.innerText = `🚀 לחצי על תאריכים בלוח לבחירה (התחלה: ${startVal} ב-${selectedQuickLoc})`;
+                    btnSave.style.opacity = '0.7';
+                } else {
+                    btnSave.innerText = `🚀 הוספת ${selectedBulkDates.size} משמרות בבת אחת (ב-${startVal} ב-${selectedQuickLoc})!`;
+                    btnSave.style.opacity = '1';
+                }
+            }
+        }
+
+        function saveBulkWorkShifts() {
+            if (selectedBulkDates.size === 0) {
+                return alert("שלי, לא נבחרו תאריכים! לחצי על הימים בלוח כדי לבחור את ימי המשמרת 📅");
+            }
+
+            const start = (document.getElementById('bulkWorkStart') && document.getElementById('bulkWorkStart').value) || '20:30';
+            const end = (document.getElementById('bulkWorkEnd') && document.getElementById('bulkWorkEnd').value) || '';
+            const location = selectedQuickLoc || 'ק.ק';
+
+            let addedCount = 0;
+            selectedBulkDates.forEach(dateStr => {
+                if (!workData[dateStr]) workData[dateStr] = [];
+
+                // מניעת כפילויות של אותה משמרת בדיוק
+                const exists = workData[dateStr].some(w => w.start === start && w.location === location);
+                if (!exists) {
+                    workData[dateStr].push({ start, end, location });
+                    workData[dateStr].sort((a,b) => a.start.localeCompare(b.start));
+                    addedCount++;
+                }
+            });
+
+            saveScheduleData();
+            selectedBulkDates.clear();
+
+            renderBulkCalendar();
+            renderSelectedDatesChips();
+            renderPageWorkList();
+            renderDashboardWorkWidget();
+            renderTodaySchedule();
+
+            alert(`🎉 נוספו בהצלחה ${addedCount} משמרות רישום ב-${location} שמתחילות ב-${start}!`);
+        }
+
+        function addSingleWorkShift() {
             const dateStr = document.getElementById('pageWorkDate').value;
-            const start = document.getElementById('pageWorkStart').value;
-            const end = document.getElementById('pageWorkEnd').value;
-            const location = document.getElementById('pageWorkLocation').value.trim();
+            const start = (document.getElementById('bulkWorkStart') && document.getElementById('bulkWorkStart').value) || '20:30';
+            const end = (document.getElementById('bulkWorkEnd') && document.getElementById('bulkWorkEnd').value) || '';
+            const location = selectedQuickLoc || 'ק.ק';
 
             if (!dateStr || !start || !location) {
-                return alert("שלי, נא למלא תאריך, שעת התחלה ומיקום למשמרת 📝");
+                return alert("שלי, נא לבחור תאריך למשמרת 📝");
             }
 
             if (!workData[dateStr]) workData[dateStr] = [];
@@ -1027,11 +1390,11 @@
             renderDashboardWorkWidget();
             renderTodaySchedule();
 
-            document.getElementById('pageWorkLocation').value = '';
-            document.getElementById('pageWorkStart').value = '';
-            document.getElementById('pageWorkEnd').value = '';
+            alert(`משמרת הרישום ב-${location} (${start}) נשמרה בהצלחה! 🎉`);
+        }
 
-            alert("משמרת הרישום נשמרה בהצלחה! 🎉");
+        function addWorkShiftFromPage() {
+            addSingleWorkShift();
         }
 
         // --- ניהול תאריך נבחר ---
@@ -1075,6 +1438,8 @@
 
             if (pageId === 'work') {
                 renderPageWorkList();
+                renderBulkCalendar();
+                renderSelectedDatesChips();
             } else if (pageId === 'dashboard') {
                 renderDashboardWorkWidget();
             }
@@ -1811,6 +2176,10 @@
         renderCustomGoals();
         renderDashboardWorkWidget();
         renderPageWorkList();
+        renderBulkCalendar();
+        renderSelectedDatesChips();
+        const startInput = document.getElementById('bulkWorkStart');
+        if (startInput) startInput.addEventListener('input', renderSelectedDatesChips);
         updateDateUI(); // טוען את הלו"ז, פולין והמטלות לפי התאריך של היום
         generateMotivation(); 
         initStudyStreakSync(); // חיבור וסנכרון מבחנים אוטומטי מ-StudyStreak Pro (משתמש "שליי")
