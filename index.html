@@ -2,9 +2,21 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>המרחב של שלי</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+    
+    <!-- PWA & Mobile Meta Tags -->
+    <meta name="theme-color" content="#7b1fa2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="שלי LIFE">
+    
+    <!-- Favicon, App Icons & Manifest -->
+    <link rel="icon" type="image/png" sizes="64x64" href="./icons/favicon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
     
     <!-- Firebase SDK (Compat) לסנכרון אוטומטי מ-StudyStreak -->
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
@@ -2184,6 +2196,16 @@
         generateMotivation(); 
         initStudyStreakSync(); // חיבור וסנכרון מבחנים אוטומטי מ-StudyStreak Pro (משתמש "שליי")
 
+    </script>
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('shellyLIFE PWA Service Worker ready:', reg.scope))
+                    .catch(err => console.warn('shellyLIFE SW register error:', err));
+            });
+        }
     </script>
 </body>
 </html>
