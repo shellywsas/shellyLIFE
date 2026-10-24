@@ -1,7 +1,9 @@
 {
+  "id": "/shellyLIFE/",
   "name": "המרחב של שלי",
   "short_name": "שלי LIFE",
-  "start_url": "./index.html",
+  "start_url": "https://shellywsas.github.io/shellyLIFE/index.html",
+  "scope": "https://shellywsas.github.io/shellyLIFE/",
   "display": "standalone",
   "background_color": "#f3e5f5",
   "theme_color": "#7b1fa2",

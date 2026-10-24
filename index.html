@@ -16,7 +16,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
     <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json?v=3">
     
     <!-- Firebase SDK (Compat) לסנכרון אוטומטי מ-StudyStreak -->
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
@@ -2201,7 +2201,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
+                navigator.serviceWorker.register('./sw.js?v=3')
                     .then(reg => console.log('shellyLIFE PWA Service Worker ready:', reg.scope))
                     .catch(err => console.warn('shellyLIFE SW register error:', err));
             });
